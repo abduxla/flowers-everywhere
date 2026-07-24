@@ -231,7 +231,7 @@
   }
   function exportDataJs() {
     const data = { version: 1, categories: Store.getCategories(), colors: window.FE_DATA.colors, products: Store.getAllProducts(), collections: Store.getCollections() };
-    const js = "/* Flowers Everywhere — exported catalogue. Replace assets/js/data.js with this file, then re-deploy. */\nwindow.FE_DATA = " + JSON.stringify(data, null, 2) + ";\n";
+    const js = "/* Flowers Everywhere — exported catalogue. Replace assets/js/data.js with this file, then commit & push to redeploy. */\nwindow.FE_DATA = " + JSON.stringify(data, null, 2) + ";\n";
     download("data.js", js);
     toast("Exported data.js");
   }
