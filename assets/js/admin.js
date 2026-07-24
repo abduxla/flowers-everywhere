@@ -7,7 +7,7 @@
   const { Store, Analytics, esc, money, slugify, productImage, I, CONFIG } = window.FE;
   const $ = FE.$, $$ = FE.$$;
 
-  const ADMIN_PASSWORD = "flowers2026"; // ← change this in assets/js/admin.js
+  const ADMIN_PASSWORD = "Flowers@admin.1991"; // change this string to set a new admin password
   const SESSION_KEY = "fe_admin_ok";
 
   let editingId = null;
