@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · Flowers Everywhere</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23C89B84'/%3E%3Cpath d='M16 16c4-3 8-3 12 0-4 3-8 3-12 0z' fill='%23A9B7A5'/%3E%3Cpath d='M16 16c-4-3-8-3-12 0 4 3 8 3 12 0z' fill='%23B08D57'/%3E%3Cpath d='M16 16c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23D98C7A'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="admin-body">
+
+  <!-- LOGIN -->
+  <div class="admin-login" id="adminLogin">
+    <div class="admin-login__card">
+      <span class="brand"><span class="mark" style="width:34px"><svg viewBox="0 0 32 32"><path d="M16 4c3 4 3 8 0 12-3-4-3-8 0-12z" fill="#C89B84"/><path d="M16 16c4-3 8-3 12 0-4 3-8 3-12 0z" fill="#A9B7A5"/><path d="M16 16c-4-3-8-3-12 0 4 3 8 3 12 0z" fill="#B08D57"/><path d="M16 16c3 4 3 8 0 12-3-4-3-8 0-12z" fill="#D98C7A"/></svg></span></span>
+      <h1 class="h3" style="margin-top:10px">Flowers Everywhere</h1>
+      <p class="muted" style="font-size:.9rem">Store Admin</p>
+      <input type="password" id="adminPass" placeholder="Enter admin password" aria-label="Admin password">
+      <button class="btn btn--primary btn--block" id="loginBtn">Sign In</button>
+      <p class="muted" id="loginErr" style="color:var(--danger);font-size:.82rem;margin-top:12px"></p>
+      <p class="muted" style="font-size:.76rem;margin-top:14px">Default password: <strong>flowers2026</strong> — change it in <code>assets/js/admin.js</code></p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div class="admin-shell hidden" id="adminApp">
+    <aside class="admin-side">
+      <span class="brand">Flowers Everywhere</span>
+      <nav class="admin-nav">
+        <a data-view="dashboard" class="active">▦ Dashboard</a>
+        <a data-view="products">✿ Products</a>
+        <a data-view="categories">☰ Categories</a>
+        <a data-view="settings">⚙ Data & Settings</a>
+      </nav>
+      <div style="margin-top:auto;padding-top:24px">
+        <a class="btn btn--ghost btn--sm btn--block" href="index.html" target="_blank" style="color:#fff;border-color:rgba(255,255,255,.25);margin-bottom:8px">View Store ↗</a>
+        <button class="btn btn--sm btn--block" id="logoutBtn" style="background:rgba(255,255,255,.1);color:#fff">Log out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <!-- DASHBOARD -->
+      <section class="admin-view" id="view-dashboard">
+        <div class="admin-topbar"><h1>Dashboard</h1><button class="btn btn--primary" id="addBtn2">+ Add Product</button></div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="admin-panel"><h2>Most viewed products</h2><div id="dashTopViews"></div></div>
+        <div class="admin-panel"><h2>Recently updated</h2><div id="dashRecent"></div></div>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section class="admin-view hidden" id="view-products">
+        <div class="admin-topbar"><h1>Products</h1><button class="btn btn--primary" id="addBtn">+ Add Product</button></div>
+        <div class="admin-panel">
+          <div class="admin-toolbar">
+            <input type="search" id="searchTable" placeholder="Search by name, ID or colour…">
+            <select id="filterCat"></select>
+            <select id="filterStatus">
+              <option value="">All statuses</option>
+              <option value="published">Live</option>
+              <option value="draft">Drafts</option>
+              <option value="archived">Archived</option>
+            </select>
+            <span class="muted" id="tableCount" style="margin-left:auto;font-size:.86rem"></span>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th></th><th>Product</th><th class="hide-sm">Category</th><th>Price</th><th class="hide-sm">Status</th><th class="hide-sm">Feat.</th><th>Actions</th></tr></thead>
+              <tbody id="productRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section class="admin-view hidden" id="view-categories">
+        <div class="admin-topbar"><h1>Categories</h1></div>
+        <div class="admin-panel">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Key</th><th>Products</th><th></th></tr></thead>
+            <tbody id="catRows"></tbody>
+          </table>
+        </div>
+        <div class="admin-panel">
+          <h2>Add a category</h2>
+          <form id="addCatForm" class="field-row">
+            <div class="field"><label>Category name</label><input id="newCatName" placeholder="e.g. Table Runners"></div>
+            <div class="field"><label>Colour palette</label>
+              <select id="newCatPalette"><option value="blush">Blush</option><option value="cream">Cream</option><option value="sage">Sage</option><option value="gold">Gold</option><option value="lavender">Lavender</option><option value="terracotta">Terracotta</option></select>
+            </div>
+            <div class="field" style="align-self:end"><button class="btn btn--primary" type="submit">Add Category</button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="admin-view hidden" id="view-settings">
+        <div class="admin-topbar"><h1>Data & Settings</h1></div>
+        <div class="admin-panel">
+          <h2>Publish your changes</h2>
+          <p class="muted" style="margin-bottom:16px">Changes you make here are saved in this browser instantly. To make them <strong>public on the live site</strong>, export the data file and replace <code>assets/js/data.js</code> in your project, then re-deploy (drag the folder to Netlify).</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn--primary" id="exportDataJs">⬇ Export data.js (for deploy)</button>
+            <button class="btn btn--ghost" id="exportJson">⬇ Export products.json (backup)</button>
+          </div>
+        </div>
+        <div class="admin-panel">
+          <h2>Import products</h2>
+          <p class="muted" style="margin-bottom:14px">Restore a backup or bulk-upload a products JSON file.</p>
+          <input type="file" id="importInput" accept="application/json,.json">
+        </div>
+        <div class="admin-panel">
+          <h2>Reset</h2>
+          <p class="muted" style="margin-bottom:14px">Restore the original demo catalogue that shipped with the site.</p>
+          <button class="btn btn--ghost" id="resetData" style="color:var(--danger);border-color:var(--danger)">Reset to defaults</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal" id="productModal">
+    <div class="modal__card">
+      <div class="modal__head"><h2 id="modalTitle">Add Product</h2><button class="icon-btn" id="modalClose" aria-label="Close"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <form id="productForm">
+        <div class="field-row">
+          <div class="field"><label>Product Name <span class="req">*</span></label><input id="f_name" required></div>
+          <div class="field"><label>Product ID</label><input id="f_id"></div>
+        </div>
+        <div class="field-row-3">
+          <div class="field"><label>Category</label><select id="f_category"></select></div>
+          <div class="field"><label>Price (Rs.) <span class="req">*</span></label><input id="f_price" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label>Old Price (optional)</label><input id="f_oldPrice" type="number" min="0" step="0.01"></div>
+        </div>
+        <div class="field-row-3">
+          <div class="field"><label>Colour</label><input id="f_color" placeholder="e.g. Blush"></div>
+          <div class="field"><label>Stock Status</label><select id="f_stock"><option value="in">In stock</option><option value="out">Sold out</option></select></div>
+          <div class="field"><label>Publish Status</label><select id="f_status"><option value="published">Published (live)</option><option value="draft">Draft (hidden)</option></select></div>
+        </div>
+        <div class="field"><label>Short Description</label><textarea id="f_short" placeholder="One or two lines shown on the product page"></textarea></div>
+        <div class="field"><label>Long Description (optional)</label><textarea id="f_long"></textarea></div>
+        <div class="field"><label>Image Alt Text (SEO)</label><input id="f_alt" placeholder="Describe the image for search engines & accessibility"></div>
+
+        <div class="field">
+          <label>Product Images</label>
+          <div class="dropzone" id="dropzone">
+            <strong>Drag & drop images here</strong><br><span style="font-size:.84rem">or click to browse — images are auto-optimised</span>
+            <input type="file" id="fileInput" accept="image/*" multiple hidden>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input id="imgUrl" placeholder="…or paste an image URL" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm)">
+            <button class="btn btn--ghost btn--sm" type="button" id="addImgUrl">Add URL</button>
+          </div>
+          <div class="img-previews" id="imgPreviews"></div>
+        </div>
+
+        <div class="field"><label>Display Flags</label>
+          <div class="toggle-row">
+            <label class="toggle"><input type="checkbox" id="f_featured"> Featured</label>
+            <label class="toggle"><input type="checkbox" id="f_new"> New Arrival</label>
+            <label class="toggle"><input type="checkbox" id="f_best"> Best Seller</label>
+            <label class="toggle"><input type="checkbox" id="f_trend"> Trending</label>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+          <button class="btn btn--ghost" type="button" id="modalCancel">Cancel</button>
+          <button class="btn btn--primary" type="submit">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

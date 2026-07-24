@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flowers Everywhere · Premium Artificial Flowers & Home Décor in Sri Lanka</title>
+  <meta name="description" content="Sri Lanka's premium destination for lifelike artificial flowers, bouquets, vases and home décor. Beautifully crafted to last — order effortlessly on WhatsApp.">
+  <link rel="canonical" href="https://flowerseverywhere.lk/">
+  <meta name="theme-color" content="#FAF7F2">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Flowers Everywhere">
+  <meta property="og:title" content="Flowers Everywhere · Premium Artificial Flowers & Home Décor">
+  <meta property="og:description" content="Lifelike artificial flowers & décor, crafted to last. Order easily on WhatsApp.">
+  <meta property="og:url" content="https://flowerseverywhere.lk/">
+  <meta property="og:image" content="https://flowerseverywhere.lk/assets/og-cover.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Flowers Everywhere · Premium Artificial Flowers & Home Décor">
+  <meta name="twitter:description" content="Lifelike artificial flowers & décor, crafted to last. Order easily on WhatsApp.">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23C89B84'/%3E%3Cpath d='M16 16c4-3 8-3 12 0-4 3-8 3-12 0z' fill='%23A9B7A5'/%3E%3Cpath d='M16 16c-4-3-8-3-12 0 4 3 8 3 12 0z' fill='%23B08D57'/%3E%3Cpath d='M16 16c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23D98C7A'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <script type="application/ld+json">
+  { "@context":"https://schema.org","@type":"Organization","name":"Flowers Everywhere",
+    "url":"https://flowerseverywhere.lk","description":"Premium artificial flowers & home décor in Sri Lanka",
+    "telephone":"+94777888870",
+    "sameAs":["https://www.tiktok.com/@flowercenter.colombo"],
+    "contactPoint":{"@type":"ContactPoint","telephone":"+94777888870","contactType":"sales","areaServed":"LK"} }
+  </script>
+</head>
+<body>
+  <div data-fe-header></div>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="container hero-inner">
+      <div class="hero-copy reveal">
+        <span class="eyebrow">Sri Lanka's Premium Floral Atelier</span>
+        <h1 class="h-display">Flowers that stay<br>beautiful, forever.</h1>
+        <p class="lead">Lifelike artificial flowers, bouquets and home décor — crafted to look and feel real, without ever wilting. Styled for the home you love, ordered in a tap on WhatsApp.</p>
+        <div class="hero-cta">
+          <a class="btn btn--primary" href="shop.html">Shop the Collection</a>
+          <a class="btn btn--ghost" href="index.html#collections">Explore Collections</a>
+        </div>
+        <div class="hero-stats">
+          <div><div class="num">600+</div><div class="lbl">Designs</div></div>
+          <div><div class="num">100%</div><div class="lbl">Real-touch feel</div></div>
+          <div><div class="num">∞</div><div class="lbl">Long lasting</div></div>
+        </div>
+      </div>
+      <div class="hero-visual reveal" data-delay="2" id="heroVisual"></div>
+    </div>
+  </header>
+
+  <!-- CATEGORIES -->
+  <section class="section" id="categories">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">Shop by Category</span>
+        <h2 class="h2">Find your perfect bloom</h2>
+        <p class="lead">From single stems to statement centerpieces — explore our curated collections.</p>
+      </div>
+      <div class="grid cat-grid" id="homeCategories"></div>
+    </div>
+  </section>
+
+  <!-- NEW ARRIVALS -->
+  <section class="section bg-cream section--tight">
+    <div class="container">
+      <div class="flow-head">
+        <div class="section-head" style="margin-bottom:0"><span class="eyebrow">Just In</span><h2 class="h2">New Arrivals</h2></div>
+        <a class="link-underline" href="shop.html?filter=new">View all →</a>
+      </div>
+      <div class="grid product-grid" id="homeNew"></div>
+    </div>
+  </section>
+
+  <!-- COLLECTIONS -->
+  <section class="section" id="collections">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">Curated Collections</span>
+        <h2 class="h2">Styled for every space & season</h2>
+      </div>
+      <div class="collection-split" id="homeCollections"></div>
+    </div>
+  </section>
+
+  <!-- BEST SELLERS -->
+  <section class="section section--tight">
+    <div class="container">
+      <div class="flow-head">
+        <div class="section-head" style="margin-bottom:0"><span class="eyebrow">Loved by Our Customers</span><h2 class="h2">Best Sellers</h2></div>
+        <a class="link-underline" href="shop.html?filter=best">View all →</a>
+      </div>
+      <div class="grid product-grid" id="homeBest"></div>
+    </div>
+  </section>
+
+  <!-- BANNER -->
+  <section class="section--tight">
+    <div class="container">
+      <div class="banner-wide reveal" id="homeBanner">
+        <div class="banner-wide__body">
+          <span class="eyebrow" style="color:var(--blush)">The Wedding Edit</span>
+          <h2 class="h2">Timeless blooms for your most beautiful day</h2>
+          <a class="btn btn--light" href="shop.html?category=bouquets">Shop Wedding Florals</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRENDING -->
+  <section class="section bg-cream section--tight">
+    <div class="container">
+      <div class="flow-head">
+        <div class="section-head" style="margin-bottom:0"><span class="eyebrow">Trending Now</span><h2 class="h2">What everyone's styling</h2></div>
+        <a class="link-underline" href="shop.html?filter=trend">View all →</a>
+      </div>
+      <div class="grid product-grid" id="homeTrending"></div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="section" id="why">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">Why Flowers Everywhere</span>
+        <h2 class="h2">Beautiful today, beautiful for years</h2>
+      </div>
+      <div class="grid why-grid">
+        <div class="why-card reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20c8 2 16-4 16-16C10 4 2 10 4 20z"/></svg></div><h3>Lifelike & lasting</h3><p>Premium real-touch and silk materials that look remarkably real and never wilt.</p></div>
+        <div class="why-card reveal" data-delay="1"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6z"/></svg></div><h3>Handcrafted quality</h3><p>Every stem and arrangement is hand-finished for a natural, one-of-a-kind look.</p></div>
+        <div class="why-card reveal" data-delay="2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div><h3>Island-wide delivery</h3><p>Delivered across Sri Lanka, with free delivery on orders over Rs. 15,000.</p></div>
+        <div class="why-card reveal" data-delay="3"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.06L2 22l5.05-1.32A10 10 0 1 0 12 2z"/></svg></div><h3>Effortless WhatsApp ordering</h3><p>No complicated checkout — build your cart and confirm your order in a quick chat.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTAGRAM -->
+  <section class="section section--tight">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">@flowercenter.colombo</span>
+        <h2 class="h2">Follow us on TikTok</h2>
+        <p class="lead">Styling inspiration, new arrivals and behind-the-scenes.</p>
+      </div>
+      <div class="grid ig-grid" id="homeInstagram"></div>
+    </div>
+  </section>
+
+  <!-- REVIEWS -->
+  <section class="section bg-cream section--tight">
+    <div class="container">
+      <div class="section-head center"><span class="eyebrow">Kind Words</span><h2 class="h2">Loved by homes across Sri Lanka</h2></div>
+      <div class="grid review-grid">
+        <div class="review-card reveal"><div class="stars">★★★★★</div><p>"Genuinely can't tell they're artificial. My living room looks like a magazine now."</p><div class="who"><span class="av">N</span><div><div class="nm">Nethmi P.</div><div class="lc">Colombo</div></div></div></div>
+        <div class="review-card reveal" data-delay="1"><div class="stars">★★★★★</div><p>"Ordering on WhatsApp was so simple. Delivered beautifully wrapped, exactly as pictured."</p><div class="who"><span class="av">R</span><div><div class="nm">Rashmi F.</div><div class="lc">Kandy</div></div></div></div>
+        <div class="review-card reveal" data-delay="2"><div class="stars">★★★★★</div><p>"Bought the centerpiece for our wedding — everyone asked where the flowers were from!"</p><div class="who"><span class="av">D</span><div><div class="nm">Dilan & Amaya</div><div class="lc">Galle</div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWSLETTER -->
+  <section class="section">
+    <div class="container">
+      <div class="newsletter reveal">
+        <span class="eyebrow" style="color:var(--blush)">Stay in bloom</span>
+        <h2 class="h2">Join our list for new arrivals & offers</h2>
+        <p>Be first to see new collections, seasonal edits and subscriber-only offers.</p>
+        <form id="newsletterForm">
+          <input type="email" required placeholder="Your email address" aria-label="Email address">
+          <button class="btn btn--accent" type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div data-fe-footer></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/home.js"></script>
+  <script>
+    // Hero visual (generated elegant bouquet)
+    document.addEventListener("DOMContentLoaded", function () {
+      var si = (window.FE_DATA && FE_DATA.siteImages) || {};
+      var hv = document.getElementById("heroVisual");
+      if (hv) hv.innerHTML = si.hero
+        ? FE.webImgHTML(si.hero, {w:800,h:1000,alt:"Premium artificial flower arrangement by Flowers Everywhere",eager:true,palette:"blush",id:"hero",name:"Flowers Everywhere"})
+        : '<img src="' + FE.genSVG({palette:"blush",id:"hero",name:"Flowers Everywhere"},0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
+      var hb = document.getElementById("homeBanner");
+      if (hb) hb.insertAdjacentHTML("afterbegin", si.banner
+        ? FE.webImgHTML(si.banner, {w:1200,h:400,alt:"The Wedding Edit",palette:"cream",id:"banner",name:"The Wedding Edit"})
+        : '<img src="' + FE.genSVG({palette:"cream",id:"banner",name:"The Wedding Edit"},1) + '" alt="The Wedding Edit" width="1200" height="400">');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop All · Flowers Everywhere</title>
+  <meta name="description" content="Browse our full collection of premium artificial flowers, bouquets, vases and home décor. Filter by category, colour and price — order easily on WhatsApp.">
+  <link rel="canonical" href="https://flowerseverywhere.lk/shop.html">
+  <meta name="theme-color" content="#FAF7F2">
+  <meta property="og:title" content="Shop All · Flowers Everywhere">
+  <meta property="og:description" content="Premium artificial flowers & home décor. Filter, browse and order on WhatsApp.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23C89B84'/%3E%3Cpath d='M16 16c4-3 8-3 12 0-4 3-8 3-12 0z' fill='%23A9B7A5'/%3E%3Cpath d='M16 16c-4-3-8-3-12 0 4 3 8 3 12 0z' fill='%23B08D57'/%3E%3Cpath d='M16 16c3 4 3 8 0 12-3-4-3-8 0-12z' fill='%23D98C7A'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div data-fe-header></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">The Collection</span>
+      <h1 class="h1" id="shopTitle">Shop All</h1>
+    </div>
+  </section>
+
+  <div class="container section--tight">
+    <div class="shop-layout">
+      <!-- FILTERS -->
+      <aside class="filters" id="shopFilters" aria-label="Filters">
+        <div class="filters__close">
+          <h3 class="h3">Filters</h3>
+          <button class="icon-btn" id="filtersClose" aria-label="Close filters"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div class="filter-group">
+          <h4>Category</h4>
+          <div id="filterCategories"></div>
+        </div>
+        <div class="filter-group">
+          <h4>Colour</h4>
+          <div id="filterColors"></div>
+        </div>
+        <div class="filter-group">
+          <h4>Price (Rs.)</h4>
+          <div class="range-inputs">
+            <input type="number" id="priceMin" placeholder="Min" min="0" aria-label="Minimum price">
+            <span>–</span>
+            <input type="number" id="priceMax" placeholder="Max" min="0" aria-label="Maximum price">
+          </div>
+        </div>
+        <div class="filter-group">
+          <h4>Availability</h4>
+          <label class="filter-opt"><input type="checkbox" id="availToggle"> In stock only</label>
+        </div>
+        <button class="btn btn--primary btn--block" id="applyFilters" style="margin-top:18px">Show results</button>
+      </aside>
+
+      <!-- RESULTS -->
+      <div>
+        <div class="shop-toolbar">
+          <button class="btn btn--ghost btn--sm filter-toggle-mobile" id="filterToggle">Filters</button>
+          <span class="count" id="shopCount">Loading…</span>
+          <div class="select-wrap">
+            <select id="sortSelect" aria-label="Sort products">
+              <option value="featured">Sort: Featured</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="best">Best Sellers</option>
+              <option value="az">Alphabetical (A–Z)</option>
+            </select>
+          </div>
+        </div>
+        <div class="active-filters" id="activeFilters"></div>
+        <div class="grid product-grid" id="shopGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div data-fe-footer></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/shop.js"></script>
+</body>
+</html>
