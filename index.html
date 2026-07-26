@@ -187,13 +187,23 @@
   <script src="assets/js/app.js"></script>
   <script src="assets/js/home.js"></script>
   <script>
-    // Hero visual (generated elegant bouquet)
+    // Hero visual. Priority: an explicit siteImages.hero, else borrow a
+    // strong real product photo (a best-seller first, then any photographed
+    // product) so the hero shows real imagery once a catalogue is uploaded —
+    // no separate hero upload needed. Falls back to the generated graphic
+    // only when nothing is photographed yet.
     document.addEventListener("DOMContentLoaded", function () {
       var si = (window.FE_DATA && FE_DATA.siteImages) || {};
+      var isReal = function (s) { return /^(data:|https?:)/.test(s || ""); };
+      var prods = (FE.Store && FE.Store.getAllProducts) ? FE.Store.getAllProducts() : ((window.FE_DATA && FE_DATA.products) || []);
+      var heroP = prods.find(function (p) { return p.isBest && Array.isArray(p.images) && p.images.some(isReal); })
+        || prods.find(function (p) { return Array.isArray(p.images) && p.images.some(isReal); });
       var hv = document.getElementById("heroVisual");
       if (hv) hv.innerHTML = si.hero
         ? FE.webImgHTML(si.hero, {w:800,h:1000,alt:"Premium artificial flower arrangement by Flowers Everywhere",eager:true,palette:"blush",id:"hero",name:"Flowers Everywhere"})
-        : '<img src="' + FE.genSVG({palette:"blush",id:"hero",name:"Flowers Everywhere"},0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
+        : heroP
+          ? FE.imgHTML(heroP, 0, {w:800,h:1000,alt:"Premium artificial flower arrangement by Flowers Everywhere",eager:true})
+          : '<img src="' + FE.genSVG({palette:"blush",id:"hero",name:"Flowers Everywhere"},0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
       var hb = document.getElementById("homeBanner");
       if (hb) hb.insertAdjacentHTML("afterbegin", si.banner
         ? FE.webImgHTML(si.banner, {w:1200,h:400,alt:"The Wedding Edit",palette:"cream",id:"banner",name:"The Wedding Edit"})

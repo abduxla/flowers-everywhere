@@ -17,11 +17,24 @@
     const catWrap = FE.$("#homeCategories");
     if (catWrap) {
       const catPhotos = (window.FE_DATA && FE_DATA.categoryImages) || {};
+      const isRealImg = (s) => /^(data:|https?:)/.test(s || "");
+      // Auto-cover: if no explicit categoryImages entry, borrow the first
+      // real product photo in that category so tiles show real imagery the
+      // moment a catalogue is uploaded — no separate category-image upload
+      // needed. Still falls back to the generated SVG when the category has
+      // no photographed products yet (imgHTML also swaps to SVG on load
+      // error, so a broken borrowed URL degrades gracefully).
+      const catCover = (key) =>
+        all.find((p) => p.category === key &&
+          Array.isArray(p.images) && p.images.some(isRealImg)) || null;
       catWrap.innerHTML = Store.getCategories().slice(0, 8).map((c, idx) => {
         const photos = catPhotos[c.key] || [];
+        const cover = catCover(c.key);
         const img = photos.length
           ? FE.webImgHTML(photos[0], { w: 600, h: 800, alt: c.name, palette: c.palette, id: c.key, name: c.name })
-          : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 0, { w: 600, h: 800, alt: c.name });
+          : cover
+            ? FE.imgHTML(cover, 0, { w: 600, h: 800, alt: c.name })
+            : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 0, { w: 600, h: 800, alt: c.name });
         return `<a class="cat-card reveal" href="shop.html?category=${c.key}">
           ${img}
           <div class="cat-card__label"><h3>${esc(c.name)}</h3><span>${esc(c.blurb || "")}</span></div>
