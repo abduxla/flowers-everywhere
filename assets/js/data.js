@@ -1410,5 +1410,41 @@ window.FE_DATA = {
       "blurb": "Terracotta, gold & autumnal tones for the season",
       "palette": "terracotta"
     }
-  ]
+  ],
+  "categoryImages": {
+    "roses": [
+      "https://loremflickr.com/600/800/rose%2Cflower?lock=11"
+    ],
+    "peonies": [
+      "https://loremflickr.com/600/800/peony%2Cflower?lock=12"
+    ],
+    "orchids": [
+      "https://loremflickr.com/600/800/orchid%2Cflower?lock=13"
+    ],
+    "tulips": [
+      "https://loremflickr.com/600/800/tulip%2Cflower?lock=14"
+    ],
+    "bouquets": [
+      "https://loremflickr.com/600/800/flower%2Cbouquet?lock=15"
+    ],
+    "greenery": [
+      "https://loremflickr.com/600/800/eucalyptus%2Cfoliage?lock=16"
+    ],
+    "vases": [
+      "https://loremflickr.com/600/800/vase%2Cflowers?lock=17"
+    ],
+    "centerpieces": [
+      "https://loremflickr.com/600/800/floral%2Carrangement?lock=18"
+    ],
+    "wreaths": [
+      "https://loremflickr.com/600/800/wreath%2Cflowers?lock=19"
+    ],
+    "gifts": [
+      "https://loremflickr.com/600/800/flowers%2Cgift?lock=20"
+    ]
+  },
+  "siteImages": {
+    "hero": "https://loremflickr.com/800/1000/flower%2Carrangement?lock=21",
+    "banner": "https://loremflickr.com/1200/400/wedding%2Cflowers?lock=22"
+  }
 };
