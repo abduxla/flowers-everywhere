@@ -1,119 +1,159 @@
 /* =====================================================================
-   Flowers Everywhere — Admin panel (no-code product management)
-   Everything is stored in the browser (localStorage). Use Export to
-   download an updated data file and re-deploy to make changes public.
+   Flowers Everywhere — Admin panel (Supabase-backed, no-code).
+   Auth, product CRUD and image upload all go straight to Supabase, so
+   every change is LIVE instantly — no export/replace/push, no data.js.
+   Requires: supabase-js CDN + supabase-config.js loaded before this.
    ===================================================================== */
 (function () {
-  const { Store, Analytics, esc, money, slugify, productImage, I, CONFIG } = window.FE;
+  const { esc, money, slugify, productImage, I, CONFIG } = window.FE;
   const $ = FE.$, $$ = FE.$$;
+  const SB = window.FE_SB;
+  const H = window.FE_SB_HELPERS;
 
-  const ADMIN_PASSWORD = "Flowers@admin.1991"; // change this string to set a new admin password
-  const SESSION_KEY = "fe_admin_ok";
+  if (!SB || !H) {
+    alert("Store backend failed to load. Check your connection and refresh.");
+    return;
+  }
 
   let editingId = null;
-  let formImages = []; // array of image src (url or dataURL)
+  let formImages = [];             // array of image URLs (Storage or pasted)
+  const MEM = { products: [], categories: [] };  // live cache from Supabase
 
-  /* ---------------- Auth ---------------- */
-  function isAuthed() { return sessionStorage.getItem(SESSION_KEY) === "1"; }
-  function showApp() { $("#adminLogin").classList.add("hidden"); $("#adminApp").classList.remove("hidden"); boot(); }
-  function login() {
-    const v = $("#adminPass").value;
-    if (v === ADMIN_PASSWORD) { sessionStorage.setItem(SESSION_KEY, "1"); showApp(); }
-    else { $("#loginErr").textContent = "Incorrect password. Try again."; }
+  /* ---------------- Data cache ---------------- */
+  async function loadAll() {
+    const [pr, cr] = await Promise.all([
+      SB.from("products").select("*").order("created_at", { ascending: false }),
+      SB.from("categories").select("*").order("sort", { ascending: true }),
+    ]);
+    if (pr.error) throw pr.error;
+    if (cr.error) throw cr.error;
+    MEM.products = (pr.data || []).map(H.rowToProduct);
+    MEM.categories = (cr.data || []).map((c) => ({
+      key: c.key, name: c.name, palette: c.palette, blurb: c.blurb, sort: c.sort,
+    }));
   }
-
-  /* ---------------- Data helpers ---------------- */
-  function all() { return Store.getAllProducts().map(p => Object.assign({}, p)); }
-  function persist(list) { Store.setAllProducts(list); }
+  const all = () => MEM.products.map((p) => Object.assign({}, p));
+  const cats = () => MEM.categories;
+  const byId = (id) => MEM.products.find((p) => p.id === id);
+  const catName = (key) => { const c = MEM.categories.find((c) => c.key === key); return c ? c.name : key; };
   function nextId() {
-    const nums = Store.getAllProducts().map(p => parseInt(String(p.id).replace(/\D/g, ""), 10)).filter(n => !isNaN(n));
+    const nums = MEM.products.map((p) => parseInt(String(p.id).replace(/\D/g, ""), 10)).filter((n) => !isNaN(n));
     return "FE" + String((nums.length ? Math.max(...nums) : 1000) + 1);
   }
-  function toast(msg) { FE.UI.toast ? FE.UI.toast(msg, true) : alert(msg); }
+  function toast(msg) { FE.UI && FE.UI.toast ? FE.UI.toast(msg, true) : console.log(msg); }
+
+  /* ---------------- Auth ---------------- */
+  async function showApp() {
+    $("#adminLogin").classList.add("hidden");
+    $("#adminApp").classList.remove("hidden");
+    try { await loadAll(); } catch (e) { toast("Could not load products: " + (e.message || e)); }
+    boot();
+  }
+  async function login() {
+    const email = H.adminEmail($("#adminUser").value);
+    const password = $("#adminPass").value;
+    $("#loginErr").textContent = "";
+    const btn = $("#loginBtn"); const old = btn.textContent; btn.textContent = "Signing in…"; btn.disabled = true;
+    try {
+      const { error } = await SB.auth.signInWithPassword({ email, password });
+      if (error) { $("#loginErr").textContent = "Incorrect username or password."; return; }
+      await showApp();
+    } catch (e) {
+      $("#loginErr").textContent = "Sign-in failed. Check your connection.";
+    } finally { btn.textContent = old; btn.disabled = false; }
+  }
 
   /* ---------------- Dashboard ---------------- */
   function renderDashboard() {
-    const list = Store.getAllProducts();
-    const active = list.filter(p => !p.archived && p.status !== "draft");
-    const cats = Store.getCategories();
-    const a = Analytics.get();
-    const topViews = Object.entries(a.views || {}).sort((x, y) => y[1] - x[1]).slice(0, 5);
+    const list = MEM.products;
+    const live = list.filter((p) => !p.archived && p.status !== "draft");
     $("#statGrid").innerHTML = `
-      <div class="stat-card"><div class="lbl">Live Products</div><div class="val">${active.length}</div></div>
-      <div class="stat-card"><div class="lbl">Categories</div><div class="val">${cats.length}</div></div>
-      <div class="stat-card"><div class="lbl">Featured</div><div class="val">${list.filter(p=>p.featured&&!p.archived).length}</div></div>
-      <div class="stat-card"><div class="lbl">WhatsApp Checkouts</div><div class="val">${a.checkouts||0}</div></div>`;
-    $("#dashTopViews").innerHTML = topViews.length
-      ? topViews.map(([id, n]) => { const p = Store.byId(id); return `<div class="summary-row"><span>${p ? esc(p.name) : id}</span><span>${n} views</span></div>`; }).join("")
-      : '<p class="muted">No product views tracked yet. Views are recorded as customers browse the live site.</p>';
-    const recent = list.slice().sort((x,y)=>new Date(y.updatedAt)-new Date(x.updatedAt)).slice(0,5);
-    $("#dashRecent").innerHTML = recent.map(p => `<div class="summary-row"><span>${esc(p.name)}</span><span>${money(p.price)}</span></div>`).join("");
+      <div class="stat-card"><div class="lbl">Live Products</div><div class="val">${live.length}</div></div>
+      <div class="stat-card"><div class="lbl">Categories</div><div class="val">${cats().length}</div></div>
+      <div class="stat-card"><div class="lbl">Featured</div><div class="val">${list.filter((p) => p.featured && !p.archived).length}</div></div>
+      <div class="stat-card"><div class="lbl">Drafts</div><div class="val">${list.filter((p) => p.status === "draft" && !p.archived).length}</div></div>`;
+    const topEl = $("#dashTopViews");
+    if (topEl) topEl.innerHTML = '<p class="muted">Live product views appear in the storefront analytics once Stage 2 is connected.</p>';
+    const recent = list.slice().sort((x, y) => new Date(y.updatedAt) - new Date(x.updatedAt)).slice(0, 5);
+    const recEl = $("#dashRecent");
+    if (recEl) recEl.innerHTML = recent.map((p) => `<div class="summary-row"><span>${esc(p.name)}</span><span>${money(p.price)}</span></div>`).join("")
+      || '<p class="muted">No products yet. Click “Add Product” to create your first one.</p>';
   }
 
   /* ---------------- Products table ---------------- */
   const tState = { q: "", cat: "", status: "" };
   function renderTable() {
     let list = all();
-    if (tState.q) { const q = tState.q.toLowerCase(); list = list.filter(p => (p.name+" "+p.id+" "+p.color).toLowerCase().includes(q)); }
-    if (tState.cat) list = list.filter(p => p.category === tState.cat);
-    if (tState.status === "archived") list = list.filter(p => p.archived);
-    else if (tState.status === "draft") list = list.filter(p => p.status === "draft" && !p.archived);
-    else if (tState.status === "published") list = list.filter(p => p.status !== "draft" && !p.archived);
+    if (tState.q) { const q = tState.q.toLowerCase(); list = list.filter((p) => (p.name + " " + p.id + " " + p.color).toLowerCase().includes(q)); }
+    if (tState.cat) list = list.filter((p) => p.category === tState.cat);
+    if (tState.status === "archived") list = list.filter((p) => p.archived);
+    else if (tState.status === "draft") list = list.filter((p) => p.status === "draft" && !p.archived);
+    else if (tState.status === "published") list = list.filter((p) => p.status !== "draft" && !p.archived);
 
     $("#tableCount").textContent = list.length + " products";
-    $("#productRows").innerHTML = list.map(p => `
+    $("#productRows").innerHTML = list.map((p) => `
       <tr>
-        <td><img class="thumb" src="${productImage(p,0)}" alt=""></td>
+        <td><img class="thumb" src="${productImage(p, 0)}" alt=""></td>
         <td><strong>${esc(p.name)}</strong><br><span class="muted" style="font-size:.78rem">${p.id}</span></td>
-        <td class="hide-sm">${esc(Store.categoryName(p.category))}</td>
+        <td class="hide-sm">${esc(catName(p.category))}</td>
         <td>${money(p.price)}</td>
-        <td class="hide-sm">${p.archived?'<span class="tag tag--archived">Archived</span>':(p.status==="draft"?'<span class="tag tag--off">Draft</span>':'<span class="tag tag--on">Live</span>')}</td>
-        <td class="hide-sm">${p.featured?'★':'–'}</td>
+        <td class="hide-sm">${p.archived ? '<span class="tag tag--archived">Archived</span>' : (p.status === "draft" ? '<span class="tag tag--off">Draft</span>' : '<span class="tag tag--on">Live</span>')}</td>
+        <td class="hide-sm">${p.featured ? "★" : "–"}</td>
         <td>
           <div class="tbl-actions">
-            <button title="Edit" data-edit="${p.id}">${I.copy.replace('9 9','').includes('rect')?'✎':'✎'}</button>
+            <button title="Edit" data-edit="${p.id}">✎</button>
             <button title="Duplicate" data-dup="${p.id}">⧉</button>
-            <button title="${p.archived?'Restore':'Archive'}" data-arch="${p.id}">${p.archived?'↺':'🗄'}</button>
+            <button title="${p.archived ? "Restore" : "Archive"}" data-arch="${p.id}">${p.archived ? "↺" : "🗄"}</button>
             <button title="Delete" data-del="${p.id}">🗑</button>
           </div>
         </td>
       </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:40px" class="muted">No products match.</td></tr>';
 
-    $$("#productRows [data-edit]").forEach(b => b.onclick = () => openForm(b.getAttribute("data-edit")));
-    $$("#productRows [data-dup]").forEach(b => b.onclick = () => duplicate(b.getAttribute("data-dup")));
-    $$("#productRows [data-arch]").forEach(b => b.onclick = () => toggleArchive(b.getAttribute("data-arch")));
-    $$("#productRows [data-del]").forEach(b => b.onclick = () => del(b.getAttribute("data-del")));
+    $$("#productRows [data-edit]").forEach((b) => b.onclick = () => openForm(b.getAttribute("data-edit")));
+    $$("#productRows [data-dup]").forEach((b) => b.onclick = () => duplicate(b.getAttribute("data-dup")));
+    $$("#productRows [data-arch]").forEach((b) => b.onclick = () => toggleArchive(b.getAttribute("data-arch")));
+    $$("#productRows [data-del]").forEach((b) => b.onclick = () => del(b.getAttribute("data-del")));
   }
 
-  function duplicate(id) {
-    const list = all(); const src = list.find(p => p.id === id); if (!src) return;
+  async function persistRow(product) {
+    const { error } = await SB.from("products").upsert(H.productToRow(product));
+    if (error) throw error;
+  }
+
+  async function duplicate(id) {
+    const src = byId(id); if (!src) return;
     const copy = Object.assign({}, src);
-    copy.id = nextId(); copy.name = src.name + " (Copy)"; copy.slug = slugify(copy.name);
-    copy.status = "draft"; copy.createdAt = copy.updatedAt = new Date().toISOString();
-    list.push(copy); persist(list); renderTable(); renderDashboard(); toast("Duplicated as draft");
+    copy.id = nextId(); copy.name = src.name + " (Copy)"; copy.status = "draft"; copy.archived = false;
+    try { await persistRow(copy); await loadAll(); renderTable(); renderDashboard(); toast("Duplicated as draft"); }
+    catch (e) { toast("Duplicate failed: " + (e.message || e)); }
   }
-  function toggleArchive(id) {
-    const list = all(); const p = list.find(x => x.id === id); if (!p) return;
-    p.archived = !p.archived; p.updatedAt = new Date().toISOString();
-    persist(list); renderTable(); renderDashboard(); toast(p.archived ? "Archived" : "Restored");
+  async function toggleArchive(id) {
+    const p = byId(id); if (!p) return;
+    const upd = Object.assign({}, p, { archived: !p.archived });
+    try { await persistRow(upd); await loadAll(); renderTable(); renderDashboard(); toast(upd.archived ? "Archived" : "Restored"); }
+    catch (e) { toast("Update failed: " + (e.message || e)); }
   }
-  function del(id) {
+  async function del(id) {
     if (!confirm("Delete this product permanently? This cannot be undone.")) return;
-    persist(all().filter(p => p.id !== id)); renderTable(); renderDashboard(); toast("Deleted");
+    try {
+      const { error } = await SB.from("products").delete().eq("id", id);
+      if (error) throw error;
+      await loadAll(); renderTable(); renderDashboard(); toast("Deleted");
+    } catch (e) { toast("Delete failed: " + (e.message || e)); }
   }
 
   /* ---------------- Product form (modal) ---------------- */
   function catOptions(sel) {
-    return Store.getCategories().map(c => `<option value="${c.key}" ${c.key===sel?"selected":""}>${esc(c.name)}</option>`).join("");
+    return cats().map((c) => `<option value="${c.key}" ${c.key === sel ? "selected" : ""}>${esc(c.name)}</option>`).join("");
   }
   function openForm(id) {
     editingId = id || null;
-    const p = id ? Store.byId(id) : null;
+    const p = id ? byId(id) : null;
     formImages = p && p.images ? p.images.slice() : [];
     $("#modalTitle").textContent = id ? "Edit Product" : "Add Product";
     $("#f_id").value = p ? p.id : nextId();
     $("#f_name").value = p ? p.name : "";
-    $("#f_category").innerHTML = catOptions(p ? p.category : "roses");
+    $("#f_category").innerHTML = catOptions(p ? p.category : (cats()[0] && cats()[0].key) || "roses");
     $("#f_price").value = p ? p.price : "";
     $("#f_oldPrice").value = p && p.oldPrice ? p.oldPrice : "";
     $("#f_color").value = p ? p.color : "";
@@ -134,23 +174,23 @@
   function renderFormImages() {
     const box = $("#imgPreviews");
     box.innerHTML = formImages.map((src, i) => `<div class="img-preview"><img src="${src}" alt=""><button data-rm="${i}" aria-label="Remove">×</button></div>`).join("")
-      || '<p class="muted" style="font-size:.84rem">No images yet — an elegant placeholder is generated automatically. Add photo URLs or upload images below.</p>';
-    box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { formImages.splice(+b.getAttribute("data-rm"), 1); renderFormImages(); });
+      || '<p class="muted" style="font-size:.84rem">No images yet — an elegant placeholder is shown until you add one. Upload photos or paste an image URL below.</p>';
+    box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { formImages.splice(+b.getAttribute("data-rm"), 1); renderFormImages(); });
   }
 
-  function saveForm(e) {
+  async function saveForm(e) {
     e.preventDefault();
     const name = $("#f_name").value.trim();
     const price = parseFloat($("#f_price").value);
     if (!name || isNaN(price)) { toast("Name and price are required"); return; }
-    const list = all();
-    let p = editingId ? list.find(x => x.id === editingId) : null;
-    const now = new Date().toISOString();
+    const btn = $("#productForm").querySelector('button[type="submit"]');
+    const old = btn.textContent; btn.textContent = "Saving…"; btn.disabled = true;
     const data = {
       id: $("#f_id").value.trim() || nextId(),
-      name, slug: slugify(name),
+      name,
       category: $("#f_category").value,
-      price, oldPrice: $("#f_oldPrice").value ? parseFloat($("#f_oldPrice").value) : null,
+      price,
+      oldPrice: $("#f_oldPrice").value ? parseFloat($("#f_oldPrice").value) : null,
       color: $("#f_color").value.trim() || "Blush",
       stock: $("#f_stock").value,
       status: $("#f_status").value,
@@ -162,155 +202,140 @@
       isBest: $("#f_best").checked,
       isTrending: $("#f_trend").checked,
       images: formImages.slice(),
-      imageCount: 3,
-      palette: p ? p.palette : paletteForCategory($("#f_category").value),
-      archived: p ? p.archived : false,
-      updatedAt: now,
+      archived: editingId ? !!(byId(editingId) || {}).archived : false,
     };
-    if (p) { Object.assign(p, data); }
-    else { data.createdAt = now; list.push(data); }
-    persist(list); closeForm(); renderTable(); renderDashboard(); toast("Saved");
-  }
-  function paletteForCategory(key) {
-    const c = Store.getCategories().find(c => c.key === key);
-    return c ? c.palette : "blush";
+    try {
+      await persistRow(data);
+      await loadAll(); closeForm(); renderTable(); renderDashboard(); toast("Saved — live on your store");
+    } catch (err) {
+      toast("Save failed: " + (err.message || err));
+    } finally { btn.textContent = old; btn.disabled = false; }
   }
 
-  /* ---------------- Image upload + compression ---------------- */
-  function compress(file) {
+  /* ---------------- Image upload → Supabase Storage ---------------- */
+  function compressToBlob(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
         img.onload = () => {
-          const max = 1100; let { width, height } = img;
+          const max = 1400; let { width, height } = img;
           if (width > max || height > max) { const s = max / Math.max(width, height); width *= s; height *= s; }
           const c = document.createElement("canvas"); c.width = width; c.height = height;
           c.getContext("2d").drawImage(img, 0, 0, width, height);
-          try { resolve(c.toDataURL("image/jpeg", 0.82)); } catch (e) { resolve(reader.result); }
+          c.toBlob((b) => resolve(b || file), "image/jpeg", 0.82);
         };
-        img.onerror = () => resolve(reader.result);
+        img.onerror = () => resolve(file);
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
   }
+  async function uploadImage(blob) {
+    const path = "products/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + ".jpg";
+    const { error } = await SB.storage.from("product-images").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+    if (error) throw error;
+    const { data } = SB.storage.from("product-images").getPublicUrl(path);
+    return data.publicUrl;
+  }
   async function handleFiles(files) {
-    for (const f of files) { if (f.type.startsWith("image/")) { const d = await compress(f); formImages.push(d); } }
-    renderFormImages();
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
+      try {
+        toast("Uploading image…");
+        const blob = await compressToBlob(f);
+        const url = await uploadImage(blob);
+        formImages.push(url);
+        renderFormImages();
+      } catch (err) { toast("Image upload failed: " + (err.message || err)); }
+    }
   }
 
   /* ---------------- Categories ---------------- */
   function renderCategories() {
-    const cats = Store.getCategories();
-    $("#catRows").innerHTML = cats.map((c, i) => `
+    $("#catRows").innerHTML = cats().map((c) => `
       <tr><td><strong>${esc(c.name)}</strong></td><td class="muted">${c.key}</td>
-      <td>${Store.getAllProducts().filter(p=>p.category===c.key).length}</td>
+      <td>${MEM.products.filter((p) => p.category === c.key).length}</td>
       <td><div class="tbl-actions"><button data-catdel="${c.key}" title="Delete">🗑</button></div></td></tr>`).join("");
-    $$("#catRows [data-catdel]").forEach(b => b.onclick = () => {
+    $$("#catRows [data-catdel]").forEach((b) => b.onclick = async () => {
       const key = b.getAttribute("data-catdel");
-      if (Store.getAllProducts().some(p => p.category === key)) { toast("Move or delete products in this category first"); return; }
-      Store.setCategories(cats.filter(c => c.key !== key)); renderCategories(); toast("Category removed");
+      if (MEM.products.some((p) => p.category === key)) { toast("Move or delete products in this category first"); return; }
+      try { const { error } = await SB.from("categories").delete().eq("key", key); if (error) throw error; await loadAll(); renderCategories(); toast("Category removed"); }
+      catch (e) { toast("Delete failed: " + (e.message || e)); }
     });
   }
-  function addCategory(e) {
+  async function addCategory(e) {
     e.preventDefault();
     const name = $("#newCatName").value.trim(); if (!name) return;
-    const cats = Store.getCategories();
     const key = slugify(name);
-    if (cats.some(c => c.key === key)) { toast("Category already exists"); return; }
-    cats.push({ key, name, palette: $("#newCatPalette").value, blurb: "" });
-    Store.setCategories(cats); $("#newCatName").value = ""; renderCategories(); toast("Category added");
+    if (cats().some((c) => c.key === key)) { toast("Category already exists"); return; }
+    try {
+      const sort = (cats().reduce((m, c) => Math.max(m, c.sort || 0), 0)) + 1;
+      const { error } = await SB.from("categories").insert({ key, name, palette: $("#newCatPalette").value, blurb: "", sort });
+      if (error) throw error;
+      await loadAll(); $("#newCatName").value = ""; renderCategories();
+      $("#filterCat").innerHTML = '<option value="">All categories</option>' + cats().map((c) => `<option value="${c.key}">${esc(c.name)}</option>`).join("");
+      toast("Category added");
+    } catch (e2) { toast("Add failed: " + (e2.message || e2)); }
   }
 
-  /* ---------------- Export / Import ---------------- */
-  function download(filename, text) {
-    const a = document.createElement("a");
-    a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
-    a.download = filename; a.click();
-  }
-  function exportDataJs() {
-    const data = { version: 1, categories: Store.getCategories(), colors: window.FE_DATA.colors, products: Store.getAllProducts(), collections: Store.getCollections() };
-    const js = "/* Flowers Everywhere — exported catalogue. Replace assets/js/data.js with this file, then commit & push to redeploy. */\nwindow.FE_DATA = " + JSON.stringify(data, null, 2) + ";\n";
-    download("data.js", js);
-    toast("Exported data.js");
-  }
+  /* ---------------- Backup export (optional) ---------------- */
   function exportJson() {
-    download("flowers-everywhere-products.json", JSON.stringify(Store.getAllProducts(), null, 2));
-    toast("Exported JSON");
-  }
-  function importJson(file) {
-    const r = new FileReader();
-    r.onload = () => {
-      try {
-        const parsed = JSON.parse(r.result);
-        const products = Array.isArray(parsed) ? parsed : parsed.products;
-        if (!Array.isArray(products)) throw new Error("bad");
-        persist(products);
-        if (parsed.categories) Store.setCategories(parsed.categories);
-        renderTable(); renderDashboard(); renderCategories(); toast("Imported " + products.length + " products");
-      } catch (e) { toast("Could not read that file"); }
-    };
-    r.readAsText(file);
+    const a = document.createElement("a");
+    a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(MEM.products, null, 2));
+    a.download = "flowers-everywhere-backup.json"; a.click();
+    toast("Backup downloaded");
   }
 
   /* ---------------- View switching ---------------- */
   function switchView(view) {
-    $$(".admin-view").forEach(v => v.classList.add("hidden"));
+    $$(".admin-view").forEach((v) => v.classList.add("hidden"));
     $("#view-" + view).classList.remove("hidden");
-    $$(".admin-nav a").forEach(a => a.classList.toggle("active", a.getAttribute("data-view") === view));
+    $$(".admin-nav a").forEach((a) => a.classList.toggle("active", a.getAttribute("data-view") === view));
     if (view === "dashboard") renderDashboard();
     if (view === "products") renderTable();
     if (view === "categories") renderCategories();
   }
 
-  /* ---------------- Boot ---------------- */
+  /* ---------------- Boot (after login) ---------------- */
   function boot() {
-    // Ensure a working copy exists so edits persist
-    if (!FE.load(CONFIG.keys.products, null)) persist(window.FE_DATA.products.map(p => Object.assign({}, p)));
-
     renderDashboard(); renderTable(); renderCategories();
 
-    $$(".admin-nav a").forEach(a => a.onclick = (e) => { e.preventDefault(); switchView(a.getAttribute("data-view")); });
+    $$(".admin-nav a").forEach((a) => a.onclick = (e) => { e.preventDefault(); switchView(a.getAttribute("data-view")); });
     $("#addBtn").onclick = () => openForm(null);
     $("#addBtn2").onclick = () => openForm(null);
     $("#modalClose").onclick = closeForm;
     $("#modalCancel").onclick = closeForm;
     $("#productForm").onsubmit = saveForm;
-    $("#productModal").addEventListener("click", e => { if (e.target.id === "productModal") closeForm(); });
+    $("#productModal").addEventListener("click", (e) => { if (e.target.id === "productModal") closeForm(); });
 
-    $("#searchTable").oninput = e => { tState.q = e.target.value; renderTable(); };
-    $("#filterCat").onchange = e => { tState.cat = e.target.value; renderTable(); };
-    $("#filterStatus").onchange = e => { tState.status = e.target.value; renderTable(); };
-    $("#filterCat").innerHTML = '<option value="">All categories</option>' + Store.getCategories().map(c => `<option value="${c.key}">${esc(c.name)}</option>`).join("");
+    $("#searchTable").oninput = (e) => { tState.q = e.target.value; renderTable(); };
+    $("#filterCat").onchange = (e) => { tState.cat = e.target.value; renderTable(); };
+    $("#filterStatus").onchange = (e) => { tState.status = e.target.value; renderTable(); };
+    $("#filterCat").innerHTML = '<option value="">All categories</option>' + cats().map((c) => `<option value="${c.key}">${esc(c.name)}</option>`).join("");
 
-    // image url add
-    $("#addImgUrl").onclick = () => {
-      const u = $("#imgUrl").value.trim(); if (!u) return;
-      formImages.push(u); $("#imgUrl").value = ""; renderFormImages();
-    };
-    // dropzone
+    $("#addImgUrl").onclick = () => { const u = $("#imgUrl").value.trim(); if (!u) return; formImages.push(u); $("#imgUrl").value = ""; renderFormImages(); };
     const dz = $("#dropzone"), fi = $("#fileInput");
     dz.onclick = () => fi.click();
     fi.onchange = () => handleFiles(fi.files);
-    ["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("drag"); }));
-    ["dragleave","drop"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("drag"); }));
-    dz.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+    ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); }));
+    dz.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
 
-    // categories
     $("#addCatForm").onsubmit = addCategory;
 
-    // export/import
-    $("#exportDataJs").onclick = exportDataJs;
-    $("#exportJson").onclick = exportJson;
-    $("#importInput").onchange = e => { if (e.target.files[0]) importJson(e.target.files[0]); };
-    $("#resetData").onclick = () => { if (confirm("Reset all products & categories to the shipped defaults? Your changes will be lost.")) { Store.reset(); renderDashboard(); renderTable(); renderCategories(); toast("Reset to defaults"); } };
-    $("#logoutBtn").onclick = () => { sessionStorage.removeItem(SESSION_KEY); location.reload(); };
+    if ($("#exportJson")) $("#exportJson").onclick = exportJson;
+    $("#logoutBtn").onclick = async () => { await SB.auth.signOut(); location.reload(); };
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     $("#loginBtn").onclick = login;
-    $("#adminPass").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
-    if (isAuthed()) showApp();
+    const onEnter = (e) => { if (e.key === "Enter") login(); };
+    $("#adminUser") && $("#adminUser").addEventListener("keydown", onEnter);
+    $("#adminPass").addEventListener("keydown", onEnter);
+    try {
+      const { data } = await SB.auth.getSession();
+      if (data && data.session) await showApp();
+    } catch (e) { /* stay on login */ }
   });
 })();

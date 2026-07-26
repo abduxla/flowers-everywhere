@@ -19,7 +19,8 @@
       <span class="brand"><span class="mark" style="width:34px"><svg viewBox="0 0 32 32"><path d="M16 4c3 4 3 8 0 12-3-4-3-8 0-12z" fill="#C89B84"/><path d="M16 16c4-3 8-3 12 0-4 3-8 3-12 0z" fill="#A9B7A5"/><path d="M16 16c-4-3-8-3-12 0 4 3 8 3 12 0z" fill="#B08D57"/><path d="M16 16c3 4 3 8 0 12-3-4-3-8 0-12z" fill="#D98C7A"/></svg></span></span>
       <h1 class="h3" style="margin-top:10px">Flowers Everywhere</h1>
       <p class="muted" style="font-size:.9rem">Store Admin</p>
-      <input type="password" id="adminPass" placeholder="Enter admin password" aria-label="Admin password">
+      <input type="text" id="adminUser" placeholder="Username" autocomplete="username" autocapitalize="none" autocorrect="off" aria-label="Admin username">
+      <input type="password" id="adminPass" placeholder="Password" autocomplete="current-password" aria-label="Admin password">
       <button class="btn btn--primary btn--block" id="loginBtn">Sign In</button>
       <p class="muted" id="loginErr" style="color:var(--danger);font-size:.82rem;margin-top:12px"></p>
     </div>
@@ -99,22 +100,11 @@
       <section class="admin-view hidden" id="view-settings">
         <div class="admin-topbar"><h1>Data & Settings</h1></div>
         <div class="admin-panel">
-          <h2>Publish your changes</h2>
-          <p class="muted" style="margin-bottom:16px">Changes you make here are saved in this browser instantly. To make them <strong>public on the live site</strong>, export the data file below, replace <code>assets/js/data.js</code> in your project, then commit &amp; push to GitHub — your host (Vercel/Netlify) redeploys automatically.</p>
+          <h2>Your changes are live instantly</h2>
+          <p class="muted" style="margin-bottom:16px">Every edit you make — products, prices, stock, photos — saves straight to your store and is <strong>live immediately</strong>. No exporting, no files to send, no re-deploy.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn--primary" id="exportDataJs">⬇ Export data.js (for deploy)</button>
-            <button class="btn btn--ghost" id="exportJson">⬇ Export products.json (backup)</button>
+            <button class="btn btn--ghost" id="exportJson">⬇ Download a backup (JSON)</button>
           </div>
-        </div>
-        <div class="admin-panel">
-          <h2>Import products</h2>
-          <p class="muted" style="margin-bottom:14px">Restore a backup or bulk-upload a products JSON file.</p>
-          <input type="file" id="importInput" accept="application/json,.json">
-        </div>
-        <div class="admin-panel">
-          <h2>Reset</h2>
-          <p class="muted" style="margin-bottom:14px">Restore the original demo catalogue that shipped with the site.</p>
-          <button class="btn btn--ghost" id="resetData" style="color:var(--danger);border-color:var(--danger)">Reset to defaults</button>
         </div>
       </section>
     </main>
@@ -177,6 +167,8 @@
 
   <script src="assets/js/data.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/supabase-config.js"></script>
   <script src="assets/js/admin.js"></script>
 </body>
 </html>
