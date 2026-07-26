@@ -94,9 +94,16 @@
       var pr = res[0], cr = res[1];
       if (pr.error || cr.error) return false;
       window.FE_DATA = window.FE_DATA || {};
-      if (Array.isArray(pr.data) && pr.data.length) {
-        window.FE_DATA.products = pr.data.map(rowToProduct);
-      }
+      // Merge: live Supabase products FIRST, then the bundled demo products
+      // as static filler so the storefront never looks empty while the real
+      // catalogue is being built. The admin only ever sees the live Supabase
+      // products, so the demo filler can't be edited/deleted there. When the
+      // real catalogue is ready, change this line to just `live`.
+      var demo = Array.isArray(window.FE_DATA.products) ? window.FE_DATA.products.slice() : [];
+      var live = Array.isArray(pr.data) ? pr.data.map(rowToProduct) : [];
+      var seen = {};
+      live.forEach(function (p) { seen[p.id] = true; });
+      window.FE_DATA.products = live.concat(demo.filter(function (p) { return !seen[p.id]; }));
       if (Array.isArray(cr.data) && cr.data.length) {
         window.FE_DATA.categories = cr.data.map(function (c) {
           return { key: c.key, name: c.name, palette: c.palette, blurb: c.blurb, sort: c.sort };
