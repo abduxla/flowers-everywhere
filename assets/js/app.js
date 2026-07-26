@@ -587,10 +587,27 @@
   };
 
   /* ------------------------------------------------------------------ */
+  /*  BOOT — load the live Supabase catalogue into FE_DATA, THEN render. */
+  /*  Page scripts call FE.boot(main) instead of listening for           */
+  /*  DOMContentLoaded directly. If Supabase isn't wired in or the fetch */
+  /*  fails, it falls straight through to the bundled data.js so the      */
+  /*  page always renders (never blank).                                  */
+  /* ------------------------------------------------------------------ */
+  function boot(cb) {
+    const start = function () {
+      const loader = window.FE_SB_HELPERS && window.FE_SB_HELPERS.loadCatalogue;
+      if (loader) { loader().then(function () { cb(); }, function () { cb(); }); }
+      else { cb(); }
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+    else start();
+  }
+
+  /* ------------------------------------------------------------------ */
   /*  EXPORT                                                             */
   /* ------------------------------------------------------------------ */
   window.FE = {
-    CONFIG, Store, Cart, WhatsApp, Analytics, UI, I,
+    CONFIG, Store, Cart, WhatsApp, Analytics, UI, I, boot,
     money, esc, slugify, $, $$, load, save,
     productImage, productGallery, imgHTML, webImgHTML, stockImage, stockImgHTML, genSVG, PALETTES,
   };

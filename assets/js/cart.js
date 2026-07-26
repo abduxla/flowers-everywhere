@@ -52,7 +52,7 @@
     const co = root.querySelector("#pageCheckout"); if (co) co.onclick = () => WhatsApp.checkout();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  FE.boot(() => {
     FE.UI.init();
     render();
     document.addEventListener("fe:cart", render);

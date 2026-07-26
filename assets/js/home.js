@@ -2,7 +2,7 @@
 (function () {
   const { Store, UI, esc, productImage, I, money } = window.FE;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  FE.boot(() => {
     FE.UI.init("home");
 
     const all = Store.getProducts();

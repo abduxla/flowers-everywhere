@@ -22,7 +22,7 @@
     document.head.appendChild(s);
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  FE.boot(() => {
     FE.UI.init();
     const pr = getProduct();
     if (!pr) { FE.$("#pdpRoot").innerHTML = '<div class="empty-state"><h3>Product not found</h3><a class="btn btn--primary" href="shop.html">Back to shop</a></div>'; return; }

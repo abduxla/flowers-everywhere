@@ -92,7 +92,7 @@
     activeFilterChips();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  FE.boot(() => {
     FE.UI.init("shop");
     readParams();
 
