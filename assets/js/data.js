@@ -1445,6 +1445,9 @@ window.FE_DATA = {
   },
   "siteImages": {
     "hero": "https://loremflickr.com/800/1000/flower%2Carrangement?lock=21",
-    "banner": "https://loremflickr.com/1200/400/wedding%2Cflowers?lock=22"
+    "banner": "https://loremflickr.com/1200/400/wedding%2Cflowers?lock=22",
+    "wedding": "https://loremflickr.com/800/600/wedding%2Cflowers?lock=31",
+    "everyday": "https://loremflickr.com/800/600/flowers%2Cvase%2Chome?lock=32",
+    "seasonal": "https://loremflickr.com/800/600/autumn%2Cflowers?lock=33"
   }
 };
