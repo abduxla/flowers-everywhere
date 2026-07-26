@@ -14,8 +14,11 @@
   var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_OiQz4PO-EoRZFnPbZAxeHw_nEhZaaPe";
 
   // Admin usernames are mapped to a fixed internal address so the login
-  // screen can show a plain "Username" field (the client types `admin`).
-  var ADMIN_EMAIL_DOMAIN = "flowerseverywhere.lk";
+  // screen can show a plain "Username" field. Must match the domain of
+  // the email the admin auth user was created with in Supabase — the
+  // account exists as admin1@flowerseverywhere.com, so username `admin1`
+  // maps to it. (Typing a full email in the field still works too.)
+  var ADMIN_EMAIL_DOMAIN = "flowerseverywhere.com";
 
   if (!window.supabase || !window.supabase.createClient) {
     console.error("[FE] supabase-js failed to load — check the CDN <script> tag.");
