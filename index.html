@@ -142,17 +142,6 @@
     </div>
   </section>
 
-  <!-- INSTAGRAM -->
-  <section class="section section--tight">
-    <div class="container">
-      <div class="section-head center">
-        <span class="eyebrow">@flowercenter.colombo</span>
-        <h2 class="h2">Follow us on TikTok</h2>
-        <p class="lead">Styling inspiration, new arrivals and behind-the-scenes.</p>
-      </div>
-      <div class="grid ig-grid" id="homeInstagram"></div>
-    </div>
-  </section>
 
   <!-- REVIEWS -->
   <section class="section bg-cream section--tight">
@@ -231,6 +220,11 @@
         } else {
           hv.innerHTML = '<img src="' + FE.genSVG({ palette: "blush", id: "hero", name: "Flowers Everywhere" }, 0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
         }
+        // Reveal the hero immediately. Since Stage 2 gates the homepage's
+        // reveal-observer setup behind the async Supabase load, the hero
+        // container could otherwise sit at opacity:0 (blank) until that
+        // finished — this guarantees the above-the-fold hero shows at once.
+        hv.classList.add("in");
       }
       var hb = document.getElementById("homeBanner");
       if (hb) hb.insertAdjacentHTML("afterbegin", si.banner
