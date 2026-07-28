@@ -238,12 +238,12 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .product-card__quick { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; opacity: 0; transform: translateY(10px); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
 .product-card:hover .product-card__quick { opacity: 1; transform: translateY(0); }
 .product-card__body { padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.product-card__cat { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-/* Product names use the readable sans (not the decorative serif) at a
-   heavier weight so customers outside Colombo — less used to the display
-   font — can read them clearly. */
-.product-card__name { font-family: var(--font-body); font-weight: 600; font-size: 1.02rem; line-height: 1.3; color: var(--ink); letter-spacing: 0; }
-.product-card__price { margin-top: auto; font-weight: 700; font-size: 1.06rem; padding-top: 8px; color: var(--ink); }
+.product-card__cat { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-2); font-weight: 500; }
+/* Product names use the clean sans (the site's own body font, so it matches
+   the aesthetic) at a light-medium weight — clearly readable for customers
+   outside Colombo, without the heavy/bold look. */
+.product-card__name { font-family: var(--font-body); font-weight: 500; font-size: 1rem; line-height: 1.4; color: var(--ink); letter-spacing: 0.005em; }
+.product-card__price { margin-top: auto; font-weight: 600; font-size: 1.02rem; padding-top: 8px; color: var(--ink); }
 .product-card__price .was { color: var(--muted-2); text-decoration: line-through; font-weight: 400; font-size: 0.86rem; margin-left: 8px; }
 .product-card.is-out .product-card__media::before { content: "Sold Out"; position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(250,247,242,0.72); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--charcoal); }
 @media (hover: none) { .product-card__fav, .product-card__quick { opacity: 1; transform: none; } }
