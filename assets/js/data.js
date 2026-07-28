@@ -1448,6 +1448,12 @@ window.FE_DATA = {
     "banner": "https://images.unsplash.com/photo-1532204182725-d0f67855ac87?auto=format&fit=crop&crop=entropy&q=72&sat=-32&bri=-6&con=-6&w=1200&h=500",
     "wedding": "https://images.unsplash.com/photo-1532204182725-d0f67855ac87?auto=format&fit=crop&crop=entropy&q=72&sat=-32&bri=-6&con=-6&w=800&h=600",
     "everyday": "https://images.unsplash.com/photo-1621341104239-d11fd41673ec?auto=format&fit=crop&crop=entropy&q=72&sat=-32&bri=-6&con=-6&w=800&h=600",
-    "seasonal": "https://images.unsplash.com/photo-1532204182725-d0f67855ac87?auto=format&fit=crop&crop=entropy&q=72&sat=-32&bri=-6&con=-6&w=800&h=600"
+    "seasonal": "https://images.unsplash.com/photo-1532204182725-d0f67855ac87?auto=format&fit=crop&crop=entropy&q=72&sat=-32&bri=-6&con=-6&w=800&h=600",
+    "heroSlides": [
+      "https://images.unsplash.com/photo-1532204182725-d0f67855ac87?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000",
+      "https://images.unsplash.com/photo-1502809737437-1d85c70dd2ca?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000",
+      "https://images.unsplash.com/photo-1526642738196-ad8ed2d50805?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000",
+      "https://images.unsplash.com/photo-1620223437074-594368cad589?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000"
+    ]
   }
 };

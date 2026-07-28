@@ -342,18 +342,20 @@
       <div class="announce">Free island-wide delivery on orders over ${money(CONFIG.freeShipThreshold)} · <a href="shop.html">Shop the new arrivals →</a></div>
       <div class="site-header" id="siteHeader">
         <div class="container nav">
+          <div class="nav-start">
+            <button class="icon-btn menu-toggle" id="openMenu" aria-label="Menu">${I.menu}</button>
+            <nav class="nav-links" aria-label="Primary">
+              <a href="index.html" ${active==="home"?'class="active"':''}>Home</a>
+              <a href="shop.html" ${active==="shop"?'class="active"':''}>Shop All</a>
+              <a href="shop.html?filter=new">New Arrivals</a>
+              <a href="shop.html?filter=best">Best Sellers</a>
+              <a href="index.html#collections">Collections</a>
+            </nav>
+          </div>
           <a class="brand" href="index.html"><span class="mark">${I.mark}</span><span class="brand-txt">Flowers Everywhere<small>${esc(CONFIG.tagline)}</small></span></a>
-          <nav class="nav-links" aria-label="Primary">
-            <a href="index.html" ${active==="home"?'class="active"':''}>Home</a>
-            <a href="shop.html" ${active==="shop"?'class="active"':''}>Shop All</a>
-            <a href="shop.html?filter=new">New Arrivals</a>
-            <a href="shop.html?filter=best">Best Sellers</a>
-            <a href="index.html#collections">Collections</a>
-          </nav>
           <div class="nav-actions">
             <button class="icon-btn" id="openSearch" aria-label="Search">${I.search}</button>
             <button class="icon-btn" id="openCart" aria-label="Cart">${I.bag}<span class="cart-count" id="cartCount">0</span></button>
-            <button class="icon-btn menu-toggle" id="openMenu" aria-label="Menu">${I.menu}</button>
           </div>
         </div>
       </div>`;

@@ -63,16 +63,40 @@
         </a>`).join("");
     }
 
-    // Instagram gallery (placeholder tiles link to real profile)
+    // "Follow us on TikTok". If real TikTok video URLs are configured
+    // (siteImages.tiktokVideos), render playable TikTok embeds; otherwise
+    // fall back to placeholder tiles linking to the profile.
     const ig = FE.$("#homeInstagram");
     if (ig) {
-      const igPal = ["blush", "sage", "gold", "lavender", "terracotta", "cream"];
-      const igPhotos = (window.FE_DATA && FE_DATA.siteImages && FE_DATA.siteImages.instagram) || [];
-      ig.innerHTML = igPal.map((pal, i) => `
-        <a class="ig-item reveal" href="${FE.CONFIG.tiktok}" target="_blank" rel="noopener" aria-label="TikTok post">
-          ${igPhotos[i] ? FE.webImgHTML(igPhotos[i], { w: 400, h: 400, alt: "Flowers Everywhere on TikTok", palette: pal, id: "ig" + i, name: "TikTok" }) : FE.imgHTML({ palette: pal, id: "ig" + i, name: "TikTok" }, i % 3, { w: 400, h: 400, alt: "Flowers Everywhere on TikTok" })}
-          <span class="ig-ic">${I.tt}</span>
-        </a>`).join("");
+      const vids = (window.FE_DATA && FE_DATA.siteImages && FE_DATA.siteImages.tiktokVideos) || [];
+      if (vids.length) {
+        ig.classList.add("tiktok-embeds");
+        ig.innerHTML = vids.slice(0, 6).map((url) => {
+          const m = String(url).match(/video\/(\d+)/);
+          const id = m ? m[1] : "";
+          return '<blockquote class="tiktok-embed" cite="' + url + '"' +
+            (id ? ' data-video-id="' + id + '"' : '') +
+            ' style="max-width:325px;min-width:250px;margin:0">' +
+            '<section><a href="' + url + '" target="_blank" rel="noopener">Watch on TikTok</a></section></blockquote>';
+        }).join("");
+        // Load TikTok's embed script once; if already loaded, re-render.
+        if (!document.getElementById("tiktok-embed-js")) {
+          const s = document.createElement("script");
+          s.id = "tiktok-embed-js"; s.async = true;
+          s.src = "https://www.tiktok.com/embed.js";
+          document.body.appendChild(s);
+        } else if (window.tiktokEmbed && window.tiktokEmbed.lib && window.tiktokEmbed.lib.render) {
+          window.tiktokEmbed.lib.render(ig.querySelectorAll(".tiktok-embed"));
+        }
+      } else {
+        const igPal = ["blush", "sage", "gold", "lavender", "terracotta", "cream"];
+        const igPhotos = (window.FE_DATA && FE_DATA.siteImages && FE_DATA.siteImages.instagram) || [];
+        ig.innerHTML = igPal.map((pal, i) => `
+          <a class="ig-item reveal" href="${FE.CONFIG.tiktok}" target="_blank" rel="noopener" aria-label="TikTok post">
+            ${igPhotos[i] ? FE.webImgHTML(igPhotos[i], { w: 400, h: 400, alt: "Flowers Everywhere on TikTok", palette: pal, id: "ig" + i, name: "TikTok" }) : FE.imgHTML({ palette: pal, id: "ig" + i, name: "TikTok" }, i % 3, { w: 400, h: 400, alt: "Flowers Everywhere on TikTok" })}
+            <span class="ig-ic">${I.tt}</span>
+          </a>`).join("");
+      }
     }
 
     // Newsletter (front-end only)

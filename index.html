@@ -201,11 +201,37 @@
       var heroP = prods.find(function (p) { return p.isBest && Array.isArray(p.images) && p.images.some(isReal); })
         || prods.find(function (p) { return Array.isArray(p.images) && p.images.some(isReal); });
       var hv = document.getElementById("heroVisual");
-      if (hv) hv.innerHTML = si.hero
-        ? FE.webImgHTML(si.hero, {w:800,h:1000,alt:"Premium artificial flower arrangement by Flowers Everywhere",eager:true,palette:"blush",id:"hero",name:"Flowers Everywhere"})
-        : heroP
-          ? FE.imgHTML(heroP, 0, {w:800,h:1000,alt:"Premium artificial flower arrangement by Flowers Everywhere",eager:true})
-          : '<img src="' + FE.genSVG({palette:"blush",id:"hero",name:"Flowers Everywhere"},0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
+      if (hv) {
+        // Build the slide set: explicit siteImages.heroSlides, else the
+        // single hero image, else a photographed product's images, else the
+        // generated graphic. 2+ slides auto-rotate as a crossfade carousel.
+        var slides = (Array.isArray(si.heroSlides) && si.heroSlides.length)
+          ? si.heroSlides.slice()
+          : (si.hero ? [si.hero]
+            : (heroP ? (heroP.images || []).filter(isReal).slice(0, 5) : []));
+        if (slides.length) {
+          hv.innerHTML = slides.map(function (u, i) {
+            return FE.webImgHTML(u, {
+              w: 800, h: 1000, palette: "blush", id: "hero" + i,
+              name: "Flowers Everywhere", eager: i === 0,
+              alt: "Premium artificial flower arrangement by Flowers Everywhere",
+              cls: "hero-slide" + (i === 0 ? " is-active" : ""),
+            });
+          }).join("");
+          var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          var imgs = hv.querySelectorAll(".hero-slide");
+          if (imgs.length > 1 && !reduce) {
+            var idx = 0;
+            setInterval(function () {
+              imgs[idx].classList.remove("is-active");
+              idx = (idx + 1) % imgs.length;
+              imgs[idx].classList.add("is-active");
+            }, 4200);
+          }
+        } else {
+          hv.innerHTML = '<img src="' + FE.genSVG({ palette: "blush", id: "hero", name: "Flowers Everywhere" }, 0) + '" alt="Premium artificial flower arrangement by Flowers Everywhere" width="800" height="1000">';
+        }
+      }
       var hb = document.getElementById("homeBanner");
       if (hb) hb.insertAdjacentHTML("afterbegin", si.banner
         ? FE.webImgHTML(si.banner, {w:1200,h:400,alt:"The Wedding Edit",palette:"cream",id:"banner",name:"The Wedding Edit"})
