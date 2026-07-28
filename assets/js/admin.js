@@ -154,8 +154,12 @@
     $("#f_id").value = p ? p.id : nextId();
     $("#f_name").value = p ? p.name : "";
     $("#f_category").innerHTML = catOptions(p ? p.category : (cats()[0] && cats()[0].key) || "roses");
-    $("#f_price").value = p ? p.price : "";
-    $("#f_oldPrice").value = p && p.oldPrice ? p.oldPrice : "";
+    // Price field shows the FULL (pre-discount) price; the % is derived
+    // from the stored oldPrice/price pair so edits round-trip cleanly.
+    const full = p ? ((p.oldPrice && p.oldPrice > p.price) ? p.oldPrice : p.price) : "";
+    $("#f_price").value = full;
+    $("#f_discount").value = (p && p.oldPrice && p.oldPrice > p.price)
+      ? Math.round((p.oldPrice - p.price) / p.oldPrice * 100) : "";
     $("#f_color").value = p ? p.color : "";
     $("#f_stock").value = p ? p.stock : "in";
     $("#f_status").value = p ? (p.status || "published") : "published";
@@ -183,14 +187,20 @@
     const name = $("#f_name").value.trim();
     const price = parseFloat($("#f_price").value);
     if (!name || isNaN(price)) { toast("Name and price are required"); return; }
+    // Discount %: store the discounted amount as price and the entered
+    // (full) price as oldPrice, so the storefront strikes the original and
+    // the cart charges the discounted price with no extra logic.
+    const pct = Math.round(Number($("#f_discount").value) || 0);
+    const hasDisc = pct > 0 && pct < 100;
+    const finalPrice = hasDisc ? Math.round(price * (1 - pct / 100)) : price;
     const btn = $("#productForm").querySelector('button[type="submit"]');
     const old = btn.textContent; btn.textContent = "Saving…"; btn.disabled = true;
     const data = {
       id: $("#f_id").value.trim() || nextId(),
       name,
       category: $("#f_category").value,
-      price,
-      oldPrice: $("#f_oldPrice").value ? parseFloat($("#f_oldPrice").value) : null,
+      price: finalPrice,
+      oldPrice: hasDisc ? price : null,
       color: $("#f_color").value.trim() || "Blush",
       stock: $("#f_stock").value,
       status: $("#f_status").value,

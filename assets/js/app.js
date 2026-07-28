@@ -308,12 +308,17 @@
       if (p.isNew) badges.push('<span class="badge badge--new">New</span>');
       if (p.isBest) badges.push('<span class="badge badge--best">Best Seller</span>');
       if (p.isTrending) badges.push('<span class="badge badge--trend">Trending</span>');
-      if (p.oldPrice) badges.push('<span class="badge badge--sale">Sale</span>');
+      // Discount: oldPrice holds the original (pre-discount) price, so the
+      // percentage is derived from it. The cart charges p.price (already the
+      // discounted amount), so the money flow needs no special handling.
+      const offPct = (p.oldPrice && p.oldPrice > p.price)
+        ? Math.round((p.oldPrice - p.price) / p.oldPrice * 100) : 0;
+      if (offPct > 0) badges.push('<span class="badge badge--discount">' + offPct + '% OFF</span>');
       const price = p.oldPrice
         ? `${money(p.price)}<span class="was">${money(p.oldPrice)}</span>`
         : money(p.price);
       const href = "product.html?id=" + encodeURIComponent(p.id);
-      return `<article class="product-card${p.stock === "out" ? " is-out" : ""}" data-id="${p.id}">
+      return `<article class="product-card reveal${p.stock === "out" ? " is-out" : ""}" data-id="${p.id}">
         <a class="product-card__media" href="${href}" aria-label="${esc(p.name)}">
           ${imgHTML(p, 0, { w: 800, h: 800 })}
         </a>
@@ -333,13 +338,26 @@
       if (!container) return;
       if (!list.length) { container.innerHTML = '<div class="empty-state"><h3>No products found</h3><p>Try adjusting your search or filters.</p></div>'; return; }
       container.innerHTML = list.map(p => this.productCard(p)).join("");
+      // Re-arm the scroll-in reveal for the freshly injected cards.
+      if (FE.UI && FE.UI.reveal) FE.UI.reveal();
     },
 
     mountHeader(active) {
       const cats = Store.getCategories();
       const catLinks = cats.slice(0, 6).map(c => `<a href="shop.html?category=${c.key}">${esc(c.name)}</a>`).join("");
+      // Announce bar as a slow right-to-left marquee. The message is
+      // repeated inside each sequence, and TWO identical sequences let the
+      // track loop seamlessly (translateX -50% == one sequence width).
+      const promo = "Free island-wide delivery on orders over " + money(CONFIG.freeShipThreshold) + " · Shop the new arrivals →";
+      const promoSeq = new Array(4).fill('<span class="announce-msg">' + promo + '</span>').join("");
       const html = `
-      <div class="announce">Free island-wide delivery on orders over ${money(CONFIG.freeShipThreshold)} · <a href="shop.html">Shop the new arrivals →</a></div>
+      <a class="announce" href="shop.html" aria-label="${esc(promo)}">
+        <span class="announce-track">
+          <span class="announce-seq">${promoSeq}</span>
+          <span class="announce-seq" aria-hidden="true">${promoSeq}</span>
+        </span>
+      </a>`;
+      const headerHtml = `
       <div class="site-header" id="siteHeader">
         <div class="container nav">
           <div class="nav-start">
@@ -360,7 +378,7 @@
         </div>
       </div>`;
       const mount = $("[data-fe-header]");
-      if (mount) mount.innerHTML = html;
+      if (mount) mount.innerHTML = html + headerHtml;
 
       // Mobile nav
       const mnav = document.createElement("div");
@@ -572,7 +590,9 @@
     },
 
     reveal() {
-      const els = $$(".reveal");
+      // Only elements not yet revealed, so repeat calls (after product
+      // grids re-render) don't re-observe already-shown ones.
+      const els = $$(".reveal:not(.in)");
       if (!("IntersectionObserver" in window)) { els.forEach(e => e.classList.add("in")); return; }
       const io = new IntersectionObserver((entries) => {
         entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
