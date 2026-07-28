@@ -501,7 +501,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   .hero-copy { max-width: 620px; margin-inline: auto; }
   .hero-copy .lead { margin-inline: auto; }
   .hero-cta, .hero-stats { justify-content: center; }
-  .hero-visual { max-width: 460px; margin-inline: auto; order: -1; }
+  /* width:100% is load-bearing: the carousel slides are absolutely
+     positioned, so without a definite width the aspect-ratio box collapses
+     to zero on mobile (margin-inline:auto alone shrink-to-fits to nothing)
+     and the hero disappears. */
+  .hero-visual { width: 100%; max-width: 460px; margin-inline: auto; order: -1; }
   .collection-split { grid-template-columns: 1fr; }
   .pdp { grid-template-columns: 1fr; }
   .pdp-gallery { position: static; }
