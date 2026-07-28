@@ -88,7 +88,7 @@
   async function loadCatalogue() {
     try {
       var res = await Promise.all([
-        window.FE_SB.from("products").select("*").neq("status", "archived").order("created_at", { ascending: false }),
+        window.FE_SB.from("products").select("*").neq("status", "archived").order("created_at", { ascending: false }).limit(2000),
         window.FE_SB.from("categories").select("*").order("sort", { ascending: true }),
       ]);
       var pr = res[0], cr = res[1];

@@ -84,13 +84,40 @@
     if (ca) ca.onclick = () => { state.categories.clear(); state.colors.clear(); state.min=state.max=null; state.availOnly=false; state.quick=null; state.q=""; FE.$("#priceMin").value=""; FE.$("#priceMax").value=""; FE.$("#availToggle").checked=false; renderFilters(); render(); };
   }
 
-  function render() {
-    const all = Store.getProducts();
-    const filtered = sortList(all.filter(match));
-    UI.renderProducts(FE.$("#shopGrid"), filtered);
-    FE.$("#shopCount").textContent = filtered.length + (filtered.length === 1 ? " product" : " products");
-    activeFilterChips();
+  // Paginated rendering: only PAGE cards are added at a time (with a
+  // "Load more" button), so a 500-600 product catalogue never floods the
+  // DOM. Filtering/sorting resets to the first page; Load more appends.
+  const PAGE = 36;
+  let filteredNow = [];
+  let shown = 0;
+  function renderPage(reset) {
+    const grid = FE.$("#shopGrid");
+    if (reset) {
+      filteredNow = sortList(Store.getProducts().filter(match));
+      shown = 0;
+      grid.innerHTML = "";
+      FE.$("#shopCount").textContent = filteredNow.length + (filteredNow.length === 1 ? " product" : " products");
+      activeFilterChips();
+    }
+    if (!filteredNow.length) {
+      grid.innerHTML = '<div class="empty-state"><h3>No products found</h3><p>Try adjusting your search or filters.</p></div>';
+    } else {
+      const next = filteredNow.slice(shown, shown + PAGE);
+      grid.insertAdjacentHTML("beforeend", next.map((p) => UI.productCard(p)).join(""));
+      shown += next.length;
+      if (FE.UI && FE.UI.reveal) FE.UI.reveal();
+    }
+    const moreWrap = FE.$("#shopMore");
+    if (moreWrap) {
+      const left = filteredNow.length - shown;
+      moreWrap.innerHTML = left > 0
+        ? '<button class="btn btn--ghost btn--block" id="loadMoreBtn">Load more (' + left + ' more)</button>'
+        : "";
+      const lm = FE.$("#loadMoreBtn");
+      if (lm) lm.onclick = () => renderPage(false);
+    }
   }
+  function render() { renderPage(true); }
 
   FE.boot(() => {
     FE.UI.init("shop");

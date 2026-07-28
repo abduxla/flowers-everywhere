@@ -22,7 +22,7 @@
   /* ---------------- Data cache ---------------- */
   async function loadAll() {
     const [pr, cr] = await Promise.all([
-      SB.from("products").select("*").order("created_at", { ascending: false }),
+      SB.from("products").select("*").order("created_at", { ascending: false }).limit(2000),
       SB.from("categories").select("*").order("sort", { ascending: true }),
     ]);
     if (pr.error) throw pr.error;
@@ -229,11 +229,15 @@
       reader.onload = () => {
         const img = new Image();
         img.onload = () => {
-          const max = 1400; let { width, height } = img;
+          // One photo per product, so we can afford a crisp, near-lossless
+          // export: cap at 1800px (well above the ~800px display size, sharp
+          // on retina) at quality 0.92. Still ~400-700 KB — 500 products fit
+          // the free tier's 1 GB many times over.
+          const max = 1800; let { width, height } = img;
           if (width > max || height > max) { const s = max / Math.max(width, height); width *= s; height *= s; }
           const c = document.createElement("canvas"); c.width = width; c.height = height;
           c.getContext("2d").drawImage(img, 0, 0, width, height);
-          c.toBlob((b) => resolve(b || file), "image/jpeg", 0.82);
+          c.toBlob((b) => resolve(b || file), "image/jpeg", 0.92);
         };
         img.onerror = () => resolve(file);
         img.src = reader.result;
@@ -249,13 +253,14 @@
     return data.publicUrl;
   }
   async function handleFiles(files) {
-    for (const f of files) {
-      if (!f.type.startsWith("image/")) continue;
+    // One photo per product: take the first image and replace any existing.
+    const f = Array.from(files).find((x) => x.type.startsWith("image/"));
+    if (f) {
       try {
         toast("Uploading image…");
         const blob = await compressToBlob(f);
         const url = await uploadImage(blob);
-        formImages.push(url);
+        formImages = [url];
         renderFormImages();
       } catch (err) { toast("Image upload failed: " + (err.message || err)); }
     }
@@ -324,7 +329,7 @@
     $("#filterStatus").onchange = (e) => { tState.status = e.target.value; renderTable(); };
     $("#filterCat").innerHTML = '<option value="">All categories</option>' + cats().map((c) => `<option value="${c.key}">${esc(c.name)}</option>`).join("");
 
-    $("#addImgUrl").onclick = () => { const u = $("#imgUrl").value.trim(); if (!u) return; formImages.push(u); $("#imgUrl").value = ""; renderFormImages(); };
+    $("#addImgUrl").onclick = () => { const u = $("#imgUrl").value.trim(); if (!u) return; formImages = [u]; $("#imgUrl").value = ""; renderFormImages(); };
     const dz = $("#dropzone"), fi = $("#fileInput");
     dz.onclick = () => fi.click();
     fi.onchange = () => handleFiles(fi.files);
