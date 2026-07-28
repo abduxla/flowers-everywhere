@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoice · Flowers Everywhere</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#1A1A1A; --muted:#78786e; --line:#e5e2dc; --accent:#c08a72; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Jost',sans-serif; color:var(--ink); background:#f2f0ec; padding:24px; }
+    .sheet { max-width:720px; margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:40px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; border-bottom:1px solid var(--line); padding-bottom:22px; margin-bottom:22px; }
+    .brand { font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:600; }
+    .brand small { display:block; font-family:'Jost',sans-serif; font-size:.6rem; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); margin-top:2px; }
+    .meta { text-align:right; font-size:.82rem; color:var(--muted); line-height:1.7; }
+    .meta b { color:var(--ink); }
+    h1.doc { font-family:'Cormorant Garamond',serif; font-weight:600; font-size:1.5rem; margin:0 0 18px; }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; }
+    th { text-align:left; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line); padding:10px 8px; }
+    td { padding:12px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+    td.r, th.r { text-align:right; }
+    .totals { margin-top:18px; margin-left:auto; width:280px; font-size:.92rem; }
+    .totals .row { display:flex; justify-content:space-between; padding:6px 8px; }
+    .totals .grand { font-weight:700; font-size:1.05rem; border-top:2px solid var(--ink); margin-top:6px; padding-top:12px; }
+    .note { margin-top:26px; font-size:.82rem; color:var(--muted); line-height:1.6; }
+    .foot { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); font-size:.8rem; color:var(--muted); text-align:center; }
+    .bar { max-width:720px; margin:0 auto 16px; display:flex; gap:10px; justify-content:flex-end; }
+    .btn { font-family:'Jost',sans-serif; font-size:.86rem; font-weight:600; padding:11px 20px; border-radius:999px; border:1px solid var(--ink); background:var(--ink); color:#fff; cursor:pointer; text-decoration:none; }
+    .btn--ghost { background:transparent; color:var(--ink); }
+    .empty { max-width:720px; margin:60px auto; text-align:center; color:var(--muted); }
+    @media print {
+      body { background:#fff; padding:0; }
+      .sheet { border:none; border-radius:0; max-width:none; padding:0; }
+      .bar { display:none; }
+      @page { margin:16mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar" id="bar">
+    <a class="btn btn--ghost" href="index.html">← Store</a>
+    <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+  <div id="root"></div>
+  <script>
+    var money = function (n) { return "Rs. " + Number(n || 0).toLocaleString("en-LK"); };
+    var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); };
+    function decodeOrder() {
+      try {
+        var h = location.hash.replace(/^#/, "");
+        if (!h) return null;
+        return JSON.parse(decodeURIComponent(escape(atob(h))));
+      } catch (e) { return null; }
+    }
+    var o = decodeOrder();
+    var root = document.getElementById("root");
+    if (!o || !o.items || !o.items.length) {
+      document.getElementById("bar").style.display = "none";
+      root.innerHTML = '<div class="empty"><h2>Invoice not found</h2><p>This link is missing its order details. Open it from the WhatsApp order message.</p></div>';
+    } else {
+      var d = o.date ? new Date(o.date) : new Date();
+      var rows = o.items.map(function (it, i) {
+        return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(it.name) + '</b><br><span style="color:var(--muted);font-size:.78rem">' + esc(it.id || "") + '</span></td>' +
+          '<td class="r">' + it.qty + '</td><td class="r">' + money(it.unit) + '</td><td class="r">' + money(it.total) + '</td></tr>';
+      }).join("");
+      root.innerHTML =
+        '<div class="sheet">' +
+          '<div class="top">' +
+            '<div class="brand">Flowers Everywhere<small>Artificial Flowers &amp; Décor</small></div>' +
+            '<div class="meta"><div>Invoice <b>' + esc(o.ref || "") + '</b></div>' +
+              '<div>' + d.toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" }) + '</div>' +
+              '<div>+94 77 788 8870</div></div>' +
+          '</div>' +
+          '<h1 class="doc">Order Invoice</h1>' +
+          '<table><thead><tr><th>#</th><th>Product</th><th class="r">Qty</th><th class="r">Unit</th><th class="r">Amount</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table>' +
+          '<div class="totals">' +
+            '<div class="row"><span>Total items</span><span>' + (o.totalItems || o.items.reduce(function (s, it) { return s + it.qty; }, 0)) + '</span></div>' +
+            '<div class="row grand"><span>Grand Total</span><span>' + money(o.grandTotal) + '</span></div>' +
+          '</div>' +
+          '<p class="note">Free island-wide delivery on orders over Rs. 15,000. Please confirm availability and delivery/pickup with the customer.</p>' +
+          '<div class="foot">Flowers Everywhere · Order placed via flowerseverywhere.lk</div>' +
+        '</div>';
+      document.title = "Invoice " + (o.ref || "") + " · Flowers Everywhere";
+    }
+  </script>
+</body>
+</html>

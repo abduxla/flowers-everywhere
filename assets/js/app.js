@@ -259,7 +259,24 @@
       msg += "\nTotal Items:\n" + totalItems + "\n\n";
       msg += "Grand Total:\n" + money(Cart.subtotal()) + "\n\n";
       msg += "Please let me know whether these items are available and whether delivery or pickup is possible.\n\nThank you!";
+      msg += "\n\n" + DIV + "\n\n📄 Printable invoice (tap to open, then Print / Save as PDF to forward):\n" + this.invoiceUrl(ref);
       return msg;
+    },
+    // Encodes the order into a link to invoice.html (order data rides in the
+    // URL hash — no backend/storage). The shop taps it to open a clean,
+    // printable invoice they can Save-as-PDF and forward to suppliers.
+    invoiceUrl(ref) {
+      const lines = Cart.lines();
+      const order = {
+        ref: ref,
+        date: new Date().toISOString(),
+        items: lines.map(l => ({ name: l.product.name, id: l.product.id, qty: l.qty, unit: l.product.price, total: l.total })),
+        totalItems: lines.reduce((s, l) => s + l.qty, 0),
+        grandTotal: Cart.subtotal(),
+      };
+      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(order))));
+      const origin = (typeof location !== "undefined" && location.origin) ? location.origin : ("https://" + CONFIG.domain);
+      return origin + "/invoice.html#" + b64;
     },
     checkout() {
       if (!Cart.count()) { UI.toast("Your cart is empty"); return; }
