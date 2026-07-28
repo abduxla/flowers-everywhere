@@ -1454,6 +1454,13 @@ window.FE_DATA = {
       "https://images.unsplash.com/photo-1502809737437-1d85c70dd2ca?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000",
       "https://images.unsplash.com/photo-1526642738196-ad8ed2d50805?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000",
       "https://images.unsplash.com/photo-1620223437074-594368cad589?auto=format&fit=crop&crop=entropy&q=74&sat=-30&bri=-5&con=-6&w=800&h=1000"
+    ],
+    "tiktokVideos": [
+      "https://www.tiktok.com/@flowercenter.colombo/video/7547369340979449105",
+      "https://www.tiktok.com/@flowercenter.colombo/video/7640536339053612309",
+      "https://www.tiktok.com/@flowercenter.colombo/video/7611193369687182612",
+      "https://www.tiktok.com/@flowercenter.colombo/video/7532068125102066964",
+      "https://www.tiktok.com/@flowercenter.colombo/video/7532200301550488833"
     ]
   }
 };
