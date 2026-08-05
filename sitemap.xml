@@ -12,4 +12,6 @@
   <url><loc>https://flowerseverywhere.lk/shop?category=centerpieces</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://flowerseverywhere.lk/shop?category=wreaths</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://flowerseverywhere.lk/shop?category=gifts</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://flowerseverywhere.lk/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://flowerseverywhere.lk/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

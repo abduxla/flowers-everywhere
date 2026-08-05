@@ -517,6 +517,7 @@
           </div>
           <div class="footer-bottom">
             <span>© ${new Date().getFullYear()} ${CONFIG.brand}. All rights reserved.</span>
+            <span class="footer-legal"><a href="terms.html">Terms &amp; Conditions</a> · <a href="privacy.html">Privacy Policy</a></span>
             <span>Handcrafted in Sri Lanka · Ordered on WhatsApp</span>
           </div>
         </div>

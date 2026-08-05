@@ -531,6 +531,22 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   .admin-side { position: static; height: auto; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* Footer legal links */
+.footer-legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.footer-legal a:hover { color: var(--accent); }
+
+/* Legal / policy pages (terms, privacy) */
+.legal { max-width: 760px; margin-inline: auto; padding-block: 8px; }
+.legal h1 { font-family: var(--font-display); font-size: clamp(1.9rem, 4vw, 2.4rem); font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+.legal .updated { color: var(--muted); font-size: 0.85rem; margin: 0 0 28px; }
+.legal h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--ink); margin: 30px 0 10px; }
+.legal p, .legal li { color: var(--text); line-height: 1.75; font-size: 0.95rem; }
+.legal p { margin: 0 0 12px; }
+.legal ul { margin: 4px 0 14px; padding-left: 20px; }
+.legal li { margin-bottom: 8px; }
+.legal strong { color: var(--ink); font-weight: 600; }
+.legal a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 640px) {
   :root { --gutter: 18px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
