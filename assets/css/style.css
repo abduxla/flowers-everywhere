@@ -90,8 +90,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 /* ---------- Layout helpers ---------- */
 .container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
-.section { padding-block: clamp(56px, 9vw, 120px); }
-.section--tight { padding-block: clamp(40px, 6vw, 72px); }
+.section { padding-block: clamp(36px, 6vw, 76px); }
+.section--tight { padding-block: clamp(24px, 4vw, 48px); }
 .center { text-align: center; }
 .stack > * + * { margin-top: 1rem; }
 .grid { display: grid; gap: clamp(16px, 2.4vw, 30px); }
@@ -174,9 +174,14 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .mobile-nav.open { visibility: visible; }
 .mobile-nav.open .mobile-nav__scrim { opacity: 1; }
 .mobile-nav.open .mobile-nav__panel { transform: translateX(0); }
-.mobile-nav__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.mobile-nav a.m-link { display: block; font-family: var(--font-display); font-size: 1.5rem; padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
-.mobile-nav__foot { margin-top: auto; padding-top: 22px; display: flex; gap: 14px; }
+.mobile-nav__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.mobile-nav a.m-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-family: var(--font-display); font-size: 1.5rem; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--ink); transition: color var(--dur) var(--ease); }
+.mobile-nav a.m-link:hover { color: var(--accent-deep); }
+.mobile-nav .m-arrow { font-family: var(--font-body); font-size: 1rem; color: var(--muted-2); flex: none; }
+.mobile-nav__foot { margin-top: auto; padding-top: 22px; display: flex; gap: 14px; align-items: center; }
+.mobile-nav .m-social { width: 44px; height: 44px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); color: var(--ink); transition: background var(--dur) var(--ease); }
+.mobile-nav .m-social svg { width: 20px; height: 20px; }
+.mobile-nav .m-social:hover { background: var(--cream); }
 
 .search-overlay { position: fixed; inset: 0; z-index: 320; background: rgba(250,247,242,0.97); backdrop-filter: blur(6px); opacity: 0; visibility: hidden; transition: opacity var(--dur) var(--ease); padding-top: 12vh; }
 .search-overlay.open { opacity: 1; visibility: visible; }
@@ -239,6 +244,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .product-card:hover .product-card__quick { opacity: 1; transform: translateY(0); }
 .product-card__body { padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .product-card__cat { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-2); font-weight: 500; }
+/* SKU/code line (Koch&Co-style): small, muted, monospace-ish tracking. */
+.product-card__sku { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2); }
+/* Quantity stepper on the card — adds/updates the cart in place. */
+.qty-stepper { display: inline-flex; align-items: center; align-self: stretch; justify-content: space-between; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+.qty-btn { width: 44px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem; line-height: 1; color: var(--ink); background: transparent; transition: background var(--dur) var(--ease); }
+.qty-btn:hover { background: var(--cream); }
+.qty-val { min-width: 40px; text-align: center; font-weight: 600; font-size: 0.98rem; color: var(--ink); }
 /* Product names use the clean sans (the site's own body font, so it matches
    the aesthetic) at a light-medium weight — clearly readable for customers
    outside Colombo, without the heavy/bold look. */

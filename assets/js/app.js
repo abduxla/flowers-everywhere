@@ -189,6 +189,7 @@
     items: load(CONFIG.keys.cart, []),
     _persist() { save(CONFIG.keys.cart, this.items); document.dispatchEvent(new CustomEvent("fe:cart")); },
     count() { return this.items.reduce((s, i) => s + i.qty, 0); },
+    qtyOf(id) { const l = this.items.find(i => i.id === id); return l ? l.qty : 0; },
     add(id, qty) {
       qty = qty || 1;
       const line = this.items.find(i => i.id === id);
@@ -341,13 +342,15 @@
         </a>
         <div class="product-card__badges">${badges.join("")}</div>
         <button class="product-card__fav" aria-label="Add to wishlist" title="Wishlist">${I.heart}</button>
-        <div class="product-card__quick">
-          <button class="btn btn--primary btn--block btn--sm" data-add="${p.id}">Add to Cart</button>
-        </div>
         <div class="product-card__body">
-          <span class="product-card__cat">${esc(Store.categoryName(p.category))}</span>
+          <span class="product-card__sku">${esc(p.id)}</span>
           <a href="${href}"><h3 class="product-card__name">${esc(p.name)}</h3></a>
           <div class="product-card__price">${price}</div>
+          <div class="qty-stepper" role="group" aria-label="Quantity">
+            <button type="button" class="qty-btn" data-qty-dec="${p.id}" aria-label="Decrease quantity">−</button>
+            <span class="qty-val" data-qty-val="${p.id}">${Cart.qtyOf(p.id)}</span>
+            <button type="button" class="qty-btn" data-qty-inc="${p.id}" aria-label="Add to cart">+</button>
+          </div>
         </div>
       </article>`;
     },
@@ -400,20 +403,26 @@
       // Mobile nav
       const mnav = document.createElement("div");
       mnav.className = "mobile-nav"; mnav.id = "mobileNav";
+      const mLink = (href, label) =>
+        `<a class="m-link" href="${href}">${esc(label)}<span class="m-arrow" aria-hidden="true">→</span></a>`;
       mnav.innerHTML = `
         <div class="mobile-nav__scrim" data-close-menu></div>
         <div class="mobile-nav__panel">
           <div class="mobile-nav__head">
-            <span class="brand" style="font-size:1.2rem">${CONFIG.brand}</span>
             <button class="icon-btn" data-close-menu aria-label="Close">${I.close}</button>
+            <span class="brand" style="font-size:1.15rem;flex:1;justify-content:center">${CONFIG.brand}</span>
+            <span style="width:42px"></span>
           </div>
-          <a class="m-link" href="index.html">Home</a>
-          <a class="m-link" href="shop.html">Shop All</a>
-          <a class="m-link" href="shop.html?filter=new">New Arrivals</a>
-          <a class="m-link" href="shop.html?filter=best">Best Sellers</a>
-          ${catLinks.replace(/nav/g,"") ? cats.map(c=>`<a class="m-link" href="shop.html?category=${c.key}">${esc(c.name)}</a>`).join("") : ""}
+          <nav class="m-links" aria-label="Mobile">
+            ${mLink("index.html", "Home")}
+            ${mLink("shop.html", "Shop All")}
+            ${mLink("shop.html?filter=new", "New Arrivals")}
+            ${mLink("shop.html?filter=best", "Best Sellers")}
+            ${cats.map((c) => mLink("shop.html?category=" + c.key, c.name)).join("")}
+          </nav>
           <div class="mobile-nav__foot">
-            <a class="btn btn--wa btn--sm" href="https://wa.me/${CONFIG.waNumber}" target="_blank">${I.wa} WhatsApp</a>
+            <a class="m-social" href="${CONFIG.tiktok}" target="_blank" rel="noopener" aria-label="TikTok">${I.tt}</a>
+            <a class="m-social" href="https://wa.me/${CONFIG.waNumber}" target="_blank" rel="noopener" aria-label="WhatsApp">${I.wa}</a>
           </div>
         </div>`;
       document.body.appendChild(mnav);
@@ -458,8 +467,30 @@
       document.addEventListener("click", (e) => {
         const add = e.target.closest("[data-add]");
         if (add) { e.preventDefault(); Cart.add(add.getAttribute("data-add"), 1); this.toast("Added to cart", true); this.openCart(); }
+        // Card quantity stepper (+/-) — adds/updates the cart in place.
+        const inc = e.target.closest("[data-qty-inc]");
+        if (inc) { e.preventDefault(); Cart.add(inc.getAttribute("data-qty-inc"), 1); this._syncQty(inc.getAttribute("data-qty-inc")); }
+        const dec = e.target.closest("[data-qty-dec]");
+        if (dec) {
+          e.preventDefault();
+          const id = dec.getAttribute("data-qty-dec");
+          Cart.setQty(id, Cart.qtyOf(id) - 1);
+          this._syncQty(id);
+        }
         const fav = e.target.closest(".product-card__fav");
         if (fav) { e.preventDefault(); this.toast("Saved to wishlist ♥"); }
+      });
+    },
+
+    /// Update every on-screen quantity readout for a product to match the
+    /// cart (a product can appear in multiple grids/rows at once).
+    _syncQty(id) {
+      const v = String(Cart.qtyOf(id));
+      $$(`[data-qty-val="${id}"]`).forEach((el) => { el.textContent = v; });
+    },
+    _syncAllQty() {
+      $$("[data-qty-val]").forEach((el) => {
+        el.textContent = String(Cart.qtyOf(el.getAttribute("data-qty-val")));
       });
     },
 
@@ -550,7 +581,7 @@
       const tw = document.createElement("div"); tw.className = "toast-wrap"; tw.id = "toastWrap";
       document.body.appendChild(tw);
 
-      document.addEventListener("fe:cart", () => { this.updateCartCount(); this.renderCart(); });
+      document.addEventListener("fe:cart", () => { this.updateCartCount(); this.renderCart(); this._syncAllQty(); });
       this.renderCart();
     },
 
