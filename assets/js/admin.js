@@ -10,13 +10,25 @@
   const SB = window.FE_SB;
   const H = window.FE_SB_HELPERS;
 
+  // Product images are hosted on cPanel (100 GB/mo bandwidth) instead of
+  // Supabase Storage (5 GB) — see img.flowerseverywhere.lk/upload.php.
+  // The database + auth still live in Supabase. The token below is shared
+  // with the PHP endpoint (it also ships in this client file — the endpoint
+  // additionally validates real image bytes + size, so the worst a leaked
+  // token allows is uploading images, never running code).
+  const UPLOAD_URL = "https://img.flowerseverywhere.lk/upload.php";
+  const UPLOAD_TOKEN = "Flowerseverywhere12345678!";
+
   if (!SB || !H) {
     alert("Store backend failed to load. Check your connection and refresh.");
     return;
   }
 
   let editingId = null;
-  let formImages = [];             // array of image URLs (Storage or pasted)
+  let formImages = [];             // array of image URLs (cPanel or pasted)
+  let sessionUploads = [];         // cPanel URLs uploaded during THIS form session
+  let originalImages = [];         // the product's images when the form opened
+  let committed = false;           // true once the product is saved
   const MEM = { products: [], categories: [] };  // live cache from Supabase
 
   /* ---------------- Data cache ---------------- */
@@ -136,8 +148,11 @@
   async function del(id) {
     if (!confirm("Delete this product permanently? This cannot be undone.")) return;
     try {
+      const prod = byId(id);
       const { error } = await SB.from("products").delete().eq("id", id);
       if (error) throw error;
+      // Free the product's hosted image(s) too.
+      if (prod && Array.isArray(prod.images)) prod.images.forEach(deleteUploadedImage);
       await loadAll(); renderTable(); renderDashboard(); toast("Deleted");
     } catch (e) { toast("Delete failed: " + (e.message || e)); }
   }
@@ -150,6 +165,9 @@
     editingId = id || null;
     const p = id ? byId(id) : null;
     formImages = p && p.images ? p.images.slice() : [];
+    originalImages = formImages.slice();
+    sessionUploads = [];
+    committed = false;
     $("#modalTitle").textContent = id ? "Edit Product" : "Add Product";
     $("#f_id").value = p ? p.id : nextId();
     $("#f_name").value = p ? p.name : "";
@@ -173,13 +191,28 @@
     renderFormImages();
     $("#productModal").classList.add("open");
   }
-  function closeForm() { $("#productModal").classList.remove("open"); editingId = null; formImages = []; }
+  function closeForm() {
+    // Cancelled without saving → delete images we uploaded this session so
+    // they don't orphan on the host.
+    if (!committed) sessionUploads.forEach(deleteUploadedImage);
+    $("#productModal").classList.remove("open");
+    editingId = null; formImages = []; sessionUploads = []; originalImages = []; committed = false;
+  }
 
   function renderFormImages() {
     const box = $("#imgPreviews");
     box.innerHTML = formImages.map((src, i) => `<div class="img-preview"><img src="${src}" alt=""><button data-rm="${i}" aria-label="Remove">×</button></div>`).join("")
       || '<p class="muted" style="font-size:.84rem">No images yet — an elegant placeholder is shown until you add one. Upload photos or paste an image URL below.</p>';
-    box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { formImages.splice(+b.getAttribute("data-rm"), 1); renderFormImages(); });
+    box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => {
+      const i = +b.getAttribute("data-rm");
+      const url = formImages[i];
+      if (url && sessionUploads.includes(url)) {
+        deleteUploadedImage(url);
+        sessionUploads = sessionUploads.filter((u) => u !== url);
+      }
+      formImages.splice(i, 1);
+      renderFormImages();
+    });
   }
 
   async function saveForm(e) {
@@ -216,6 +249,11 @@
     };
     try {
       await persistRow(data);
+      committed = true;
+      // Edit that dropped/replaced an original image → delete the old file.
+      originalImages
+        .filter((u) => !data.images.includes(u))
+        .forEach(deleteUploadedImage);
       await loadAll(); closeForm(); renderTable(); renderDashboard(); toast("Saved — live on your store");
     } catch (err) {
       toast("Save failed: " + (err.message || err));
@@ -245,12 +283,30 @@
       reader.readAsDataURL(file);
     });
   }
+  // Upload one compressed image to the cPanel endpoint; returns its public
+  // URL (https://img.flowerseverywhere.lk/uploads/xxx.jpg).
   async function uploadImage(blob) {
-    const path = "products/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + ".jpg";
-    const { error } = await SB.storage.from("product-images").upload(path, blob, { contentType: "image/jpeg", upsert: false });
-    if (error) throw error;
-    const { data } = SB.storage.from("product-images").getPublicUrl(path);
-    return data.publicUrl;
+    const fd = new FormData();
+    fd.append("file", blob, "photo.jpg");
+    const res = await fetch(UPLOAD_URL, {
+      method: "POST",
+      headers: { "X-Auth-Token": UPLOAD_TOKEN },
+      body: fd,
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.url) {
+      throw new Error(j.error || ("upload failed (" + res.status + ")"));
+    }
+    return j.url;
+  }
+
+  // Best-effort delete of a cPanel-hosted image (skips old Supabase URLs).
+  function deleteUploadedImage(url) {
+    if (!url || url.indexOf("img.flowerseverywhere.lk") < 0) return;
+    const fd = new FormData();
+    fd.append("action", "delete");
+    fd.append("file", url.split("/").pop());
+    fetch(UPLOAD_URL, { method: "POST", headers: { "X-Auth-Token": UPLOAD_TOKEN }, body: fd }).catch(() => {});
   }
   async function handleFiles(files) {
     // One photo per product: take the first image and replace any existing.
@@ -260,7 +316,14 @@
         toast("Uploading image…");
         const blob = await compressToBlob(f);
         const url = await uploadImage(blob);
+        // Replacing a photo we uploaded earlier this session → delete the old one.
+        const prev = formImages[0];
+        if (prev && sessionUploads.includes(prev)) {
+          deleteUploadedImage(prev);
+          sessionUploads = sessionUploads.filter((u) => u !== prev);
+        }
         formImages = [url];
+        sessionUploads.push(url);
         renderFormImages();
       } catch (err) { toast("Image upload failed: " + (err.message || err)); }
     }
@@ -329,7 +392,15 @@
     $("#filterStatus").onchange = (e) => { tState.status = e.target.value; renderTable(); };
     $("#filterCat").innerHTML = '<option value="">All categories</option>' + cats().map((c) => `<option value="${c.key}">${esc(c.name)}</option>`).join("");
 
-    $("#addImgUrl").onclick = () => { const u = $("#imgUrl").value.trim(); if (!u) return; formImages = [u]; $("#imgUrl").value = ""; renderFormImages(); };
+    $("#addImgUrl").onclick = () => {
+      const u = $("#imgUrl").value.trim(); if (!u) return;
+      const prev = formImages[0];
+      if (prev && sessionUploads.includes(prev)) {
+        deleteUploadedImage(prev);
+        sessionUploads = sessionUploads.filter((x) => x !== prev);
+      }
+      formImages = [u]; $("#imgUrl").value = ""; renderFormImages();
+    };
     const dz = $("#dropzone"), fi = $("#fileInput");
     dz.onclick = () => fi.click();
     fi.onchange = () => handleFiles(fi.files);
