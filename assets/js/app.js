@@ -183,6 +183,37 @@
   };
 
   /* ------------------------------------------------------------------ */
+  /*  COLOUR SWATCHES                                                    */
+  /* ------------------------------------------------------------------ */
+  // Best-effort map of common colour names → a swatch hex, so the chips
+  // show a little dot. Unknown names fall back to a soft multi-tone dot.
+  const COLOR_HEX = {
+    red:"#C0392B", crimson:"#B02A37", pink:"#F4A7B9", "hot pink":"#E84B8A", blush:"#E7CFC6",
+    white:"#FFFFFF", "off-white":"#F4F1E8", cream:"#F3EADB", ivory:"#F5F0E1",
+    yellow:"#F2C94C", mustard:"#D4A017", orange:"#E67E22", peach:"#FFCBA4", apricot:"#F4B26B",
+    purple:"#8E44AD", violet:"#7A4FB0", lavender:"#C7B8EA", lilac:"#C8A2C8", mauve:"#B784A7", plum:"#7B4A6B",
+    blue:"#3B7DD8", navy:"#2C3E70", "sky blue":"#87BCE8", teal:"#2A9D8F", turquoise:"#40C0C0",
+    green:"#4B7B5B", sage:"#A9B7A5", mint:"#B9E4C9", olive:"#7C7A3A", emerald:"#2E8B57",
+    burgundy:"#6E1E2B", maroon:"#7B2233", wine:"#722F37", gold:"#C9A24B", champagne:"#E9DCC3", bronze:"#B08D57",
+    black:"#2C2723", grey:"#9A9187", gray:"#9A9187", silver:"#C8C8C8", brown:"#8B5E3C", tan:"#D2B48C",
+    terracotta:"#B0674B", coral:"#FF7F6B", salmon:"#F09080", rose:"#D98C9A", fuchsia:"#C74B8B", magenta:"#C2185B",
+  };
+  function colorHex(name) {
+    const k = String(name || "").trim().toLowerCase();
+    if (COLOR_HEX[k]) return COLOR_HEX[k];
+    const parts = k.split(/\s+/);
+    for (let i = parts.length - 1; i >= 0; i--) { if (COLOR_HEX[parts[i]]) return COLOR_HEX[parts[i]]; }
+    return null;
+  }
+  function colorDot(name) {
+    const hex = colorHex(name);
+    const style = hex
+      ? "background:" + hex + (hex === "#FFFFFF" ? ";box-shadow:inset 0 0 0 1px var(--line)" : "")
+      : "background:conic-gradient(from 0deg,#e7cfc6,#a9b7a5,#c9a24b,#c8a2c8,#e7cfc6)";
+    return '<span class="color-dot" style="' + style + '"></span>';
+  }
+
+  /* ------------------------------------------------------------------ */
   /*  CART                                                               */
   /* ------------------------------------------------------------------ */
   const Cart = {
@@ -190,10 +221,11 @@
     _persist() { save(CONFIG.keys.cart, this.items); document.dispatchEvent(new CustomEvent("fe:cart")); },
     count() { return this.items.reduce((s, i) => s + i.qty, 0); },
     qtyOf(id) { const l = this.items.find(i => i.id === id); return l ? l.qty : 0; },
-    add(id, qty) {
+    add(id, qty, color) {
       qty = qty || 1;
       const line = this.items.find(i => i.id === id);
-      if (line) line.qty += qty; else this.items.push({ id, qty });
+      if (line) { line.qty += qty; if (color) line.color = color; }
+      else this.items.push({ id, qty, color: color || "" });
       this._persist();
       Analytics.track("add_to_cart", id);
     },
@@ -203,12 +235,19 @@
       line.qty = qty;
       if (line.qty <= 0) this.remove(id); else this._persist();
     },
+    // Update the chosen colour for a line already in the cart.
+    setColor(id, color) {
+      const line = this.items.find(i => i.id === id);
+      if (!line) return;
+      line.color = color || "";
+      this._persist();
+    },
     remove(id) { this.items = this.items.filter(i => i.id !== id); this._persist(); },
     clear() { this.items = []; this._persist(); },
     lines() {
       return this.items.map(i => {
         const p = Store.byId(i.id);
-        return p ? { product: p, qty: i.qty, total: p.price * i.qty } : null;
+        return p ? { product: p, qty: i.qty, total: p.price * i.qty, color: i.color || "" } : null;
       }).filter(Boolean);
     },
     subtotal() { return this.lines().reduce((s, l) => s + l.total, 0); },
@@ -252,6 +291,7 @@
         msg += "\n" + (i + 1) + ".\n";
         msg += "Product:\n" + l.product.name + "\n\n";
         msg += "Product ID:\n" + l.product.id + "\n\n";
+        if (l.color) msg += "Colour:\n" + l.color + "\n\n";
         msg += "Quantity:\n" + l.qty + "\n\n";
         msg += "Unit Price:\n" + money(l.product.price) + "\n\n";
         msg += "Subtotal:\n" + money(l.total) + "\n\n";
@@ -271,7 +311,7 @@
       const order = {
         ref: ref,
         date: new Date().toISOString(),
-        items: lines.map(l => ({ name: l.product.name, id: l.product.id, qty: l.qty, unit: l.product.price, total: l.total })),
+        items: lines.map(l => ({ name: l.product.name, id: l.product.id, color: l.color || "", qty: l.qty, unit: l.product.price, total: l.total })),
         totalItems: lines.reduce((s, l) => s + l.qty, 0),
         grandTotal: Cart.subtotal(),
       };
@@ -336,6 +376,11 @@
         ? `${money(p.price)}<span class="was">${money(p.oldPrice)}</span>`
         : money(p.price);
       const href = "product.html?id=" + encodeURIComponent(p.id);
+      const colorPicker = (Array.isArray(p.colors) && p.colors.length)
+        ? `<div class="color-picker" data-color-group="${p.id}" aria-label="Choose colour">
+            ${p.colors.map((c, i) => `<button type="button" class="color-chip${i === 0 ? " is-selected" : ""}" data-color-pick="${p.id}" data-color="${esc(c)}" title="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}">${colorDot(c)}<span>${esc(c)}</span></button>`).join("")}
+          </div>`
+        : "";
       return `<article class="product-card reveal${p.stock === "out" ? " is-out" : ""}" data-id="${p.id}">
         <a class="product-card__media" href="${href}" aria-label="${esc(p.name)}">
           ${imgHTML(p, 0, { w: 800, h: 800 })}
@@ -346,6 +391,7 @@
           <span class="product-card__sku">${esc(p.id)}</span>
           <a href="${href}"><h3 class="product-card__name">${esc(p.name)}</h3></a>
           <div class="product-card__price">${price}</div>
+          ${colorPicker}
           <div class="qty-stepper" role="group" aria-label="Quantity">
             <button type="button" class="qty-btn" data-qty-dec="${p.id}" aria-label="Decrease quantity">−</button>
             <span class="qty-val" data-qty-val="${p.id}">${Cart.qtyOf(p.id)}</span>
@@ -467,9 +513,32 @@
       document.addEventListener("click", (e) => {
         const add = e.target.closest("[data-add]");
         if (add) { e.preventDefault(); Cart.add(add.getAttribute("data-add"), 1); this.toast("Added to cart", true); this.openCart(); }
-        // Card quantity stepper (+/-) — adds/updates the cart in place.
+        // Colour chip on a card — select it, and if the item is already in
+        // the cart update its colour immediately.
+        const cpick = e.target.closest("[data-color-pick]");
+        if (cpick) {
+          e.preventDefault();
+          const cid = cpick.getAttribute("data-color-pick");
+          const color = cpick.getAttribute("data-color");
+          const group = cpick.closest("[data-color-group]");
+          if (group) group.querySelectorAll(".color-chip").forEach((ch) => {
+            const on = ch === cpick;
+            ch.classList.toggle("is-selected", on);
+            ch.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          if (Cart.qtyOf(cid) > 0) Cart.setColor(cid, color);
+        }
+        // Card quantity stepper (+/-) — adds/updates the cart in place,
+        // carrying the card's currently-selected colour (if any).
         const inc = e.target.closest("[data-qty-inc]");
-        if (inc) { e.preventDefault(); Cart.add(inc.getAttribute("data-qty-inc"), 1); this._syncQty(inc.getAttribute("data-qty-inc")); }
+        if (inc) {
+          e.preventDefault();
+          const id = inc.getAttribute("data-qty-inc");
+          const card = inc.closest(".product-card");
+          const sel = card && card.querySelector(".color-chip.is-selected");
+          Cart.add(id, 1, sel ? sel.getAttribute("data-color") : "");
+          this._syncQty(id);
+        }
         const dec = e.target.closest("[data-qty-dec]");
         if (dec) {
           e.preventDefault();
@@ -604,6 +673,7 @@
           ${imgHTML(l.product, 0, { alt: l.product.name })}
           <div class="cart-line__info">
             <div class="cart-line__name">${esc(l.product.name)}</div>
+            ${l.color ? `<div class="cart-line__variant">${colorDot(l.color)}Colour: ${esc(l.color)}</div>` : ""}
             <div class="cart-line__price">${money(l.product.price)}</div>
             <div class="cart-line__row">
               <div class="qty">
@@ -679,7 +749,7 @@
   /* ------------------------------------------------------------------ */
   window.FE = {
     CONFIG, Store, Cart, WhatsApp, Analytics, UI, I, boot,
-    money, esc, slugify, $, $$, load, save,
+    money, esc, slugify, $, $$, load, save, colorDot, colorHex,
     productImage, productGallery, imgHTML, webImgHTML, stockImage, stockImgHTML, genSVG, PALETTES,
   };
 })();

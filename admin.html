@@ -129,6 +129,15 @@
           <div class="field"><label>Stock Status</label><select id="f_stock"><option value="in">In stock</option><option value="out">Sold out</option></select></div>
           <div class="field"><label>Publish Status</label><select id="f_status"><option value="published">Published (live)</option><option value="draft">Draft (hidden)</option></select></div>
         </div>
+        <div class="field">
+          <label>Colour options (optional)</label>
+          <div style="display:flex;gap:8px">
+            <input id="f_coloradd" placeholder="e.g. Red — type a colour and press Add" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm)">
+            <button class="btn btn--ghost btn--sm" type="button" id="addColorBtn">Add</button>
+          </div>
+          <div class="color-chips" id="colorChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+          <p class="muted" style="font-size:.8rem;margin-top:6px">Add one chip per colour a customer can choose on the store. Leave empty for a single-colour product.</p>
+        </div>
         <div class="field"><label>Short Description</label><textarea id="f_short" placeholder="One or two lines shown on the product page"></textarea></div>
         <div class="field"><label>Long Description (optional)</label><textarea id="f_long"></textarea></div>
         <div class="field"><label>Image Alt Text (SEO)</label><input id="f_alt" placeholder="Describe the image for search engines & accessibility"></div>

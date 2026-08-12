@@ -64,7 +64,7 @@
     } else {
       var d = o.date ? new Date(o.date) : new Date();
       var rows = o.items.map(function (it, i) {
-        return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(it.name) + '</b><br><span style="color:var(--muted);font-size:.78rem">' + esc(it.id || "") + '</span></td>' +
+        return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(it.name) + '</b><br><span style="color:var(--muted);font-size:.78rem">' + esc(it.id || "") + (it.color ? ' · ' + esc(it.color) : '') + '</span></td>' +
           '<td class="r">' + it.qty + '</td><td class="r">' + money(it.unit) + '</td><td class="r">' + money(it.total) + '</td></tr>';
       }).join("");
       root.innerHTML =

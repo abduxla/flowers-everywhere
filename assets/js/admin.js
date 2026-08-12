@@ -25,6 +25,7 @@
   }
 
   let editingId = null;
+  let formColors = [];             // colour options a customer can choose (variants)
   let formImages = [];             // array of image URLs (cPanel or pasted)
   let sessionUploads = [];         // cPanel URLs uploaded during THIS form session
   let originalImages = [];         // the product's images when the form opened
@@ -179,6 +180,8 @@
     $("#f_discount").value = (p && p.oldPrice && p.oldPrice > p.price)
       ? Math.round((p.oldPrice - p.price) / p.oldPrice * 100) : "";
     $("#f_color").value = p ? p.color : "";
+    formColors = p && Array.isArray(p.colors) ? p.colors.slice() : [];
+    renderFormColors();
     $("#f_stock").value = p ? p.stock : "in";
     $("#f_status").value = p ? (p.status || "published") : "published";
     $("#f_short").value = p ? p.shortDesc : "";
@@ -196,7 +199,25 @@
     // they don't orphan on the host.
     if (!committed) sessionUploads.forEach(deleteUploadedImage);
     $("#productModal").classList.remove("open");
-    editingId = null; formImages = []; sessionUploads = []; originalImages = []; committed = false;
+    editingId = null; formImages = []; formColors = []; sessionUploads = []; originalImages = []; committed = false;
+  }
+
+  /* ---------------- Colour options (variants) ---------------- */
+  function renderFormColors() {
+    const box = $("#colorChips"); if (!box) return;
+    box.innerHTML = formColors.map((c, i) =>
+      `<span class="admin-color-chip">${esc(c)}<button type="button" data-crm="${i}" aria-label="Remove ${esc(c)}">×</button></span>`
+    ).join("") || '<span class="muted" style="font-size:.82rem">No colour options — single-colour product.</span>';
+    box.querySelectorAll("[data-crm]").forEach((b) => b.onclick = () => {
+      formColors.splice(+b.getAttribute("data-crm"), 1);
+      renderFormColors();
+    });
+  }
+  function addFormColor() {
+    const inp = $("#f_coloradd"); const v = (inp.value || "").trim();
+    if (!v) return;
+    if (!formColors.some((c) => c.toLowerCase() === v.toLowerCase())) formColors.push(v);
+    inp.value = ""; inp.focus(); renderFormColors();
   }
 
   function renderFormImages() {
@@ -235,6 +256,7 @@
       price: finalPrice,
       oldPrice: hasDisc ? price : null,
       color: $("#f_color").value.trim() || "Blush",
+      colors: formColors.slice(),
       stock: $("#f_stock").value,
       status: $("#f_status").value,
       shortDesc: $("#f_short").value.trim(),
@@ -386,6 +408,9 @@
     $("#modalCancel").onclick = closeForm;
     $("#productForm").onsubmit = saveForm;
     $("#productModal").addEventListener("click", (e) => { if (e.target.id === "productModal") closeForm(); });
+
+    $("#addColorBtn").onclick = addFormColor;
+    $("#f_coloradd").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFormColor(); } });
 
     $("#searchTable").oninput = (e) => { tState.q = e.target.value; renderTable(); };
     $("#filterCat").onchange = (e) => { tState.cat = e.target.value; renderTable(); };

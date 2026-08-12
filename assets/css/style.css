@@ -260,6 +260,25 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .product-card.is-out .product-card__media::before { content: "Sold Out"; position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(250,247,242,0.72); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--charcoal); }
 @media (hover: none) { .product-card__fav, .product-card__quick { opacity: 1; transform: none; } }
 
+/* ---- Colour variants (chips) ---- */
+.color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 999px; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); }
+.color-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border: 1px solid var(--line); border-radius: var(--r-pill); background: #fff; font-size: 0.76rem; color: var(--ink); cursor: pointer; transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); line-height: 1; }
+.color-chip:hover { border-color: var(--accent); }
+.color-chip.is-selected { border-color: var(--ink); background: var(--cream); font-weight: 600; }
+/* Product detail page colour selector */
+.pdp-colors { margin: 4px 0 4px; }
+.pdp-colors__label { display: block; font-size: 0.86rem; color: var(--muted); margin-bottom: 8px; }
+.pdp-colors__label b { color: var(--ink); font-weight: 600; }
+.pdp-colors__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pdp-colors .color-chip { padding: 8px 14px 8px 10px; font-size: 0.84rem; }
+/* Cart line chosen-colour note */
+.cart-line__variant { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--muted); margin: 2px 0 4px; }
+/* Admin colour-options chips */
+.admin-color-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); background: #fff; font-size: 0.82rem; color: var(--ink); }
+.admin-color-chip button { width: 20px; height: 20px; border-radius: 999px; border: none; background: var(--cream); color: var(--ink); cursor: pointer; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.admin-color-chip button:hover { background: var(--blush); }
+
 /* ===================== COLLECTIONS ===================== */
 .collection-split { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(16px, 2.4vw, 28px); }
 .collection-card { position: relative; min-height: 380px; border-radius: var(--r-lg); overflow: hidden; display: flex; align-items: flex-end; padding: 34px; color: #fff; }

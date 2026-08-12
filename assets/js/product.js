@@ -58,6 +58,18 @@
     if (pr.isTrending) badges.push('<span class="badge badge--trend">Trending</span>');
     const price = pr.oldPrice ? `${money(pr.price)}<span class="was">${money(pr.oldPrice)}</span>` : money(pr.price);
 
+    // Colour options (variants). Selecting a chip updates `selColor`, which
+    // rides into the cart line and the WhatsApp order.
+    const hasColors = Array.isArray(pr.colors) && pr.colors.length;
+    let selColor = hasColors ? pr.colors[0] : "";
+    const colorRow = hasColors ? `
+      <div class="pdp-colors" data-color-group="pdp">
+        <span class="pdp-colors__label">Colour: <b id="pdpColorName">${esc(selColor)}</b></span>
+        <div class="pdp-colors__chips">
+          ${pr.colors.map((c, i) => `<button type="button" class="color-chip${i === 0 ? " is-selected" : ""}" data-color-pick="pdp" data-color="${esc(c)}" title="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}">${FE.colorDot(c)}<span>${esc(c)}</span></button>`).join("")}
+        </div>
+      </div>` : "";
+
     FE.$("#pdpInfo").innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${badges.join("")}</div>
       <span class="pdp-cat">${esc(Store.categoryName(pr.category))}</span>
@@ -65,6 +77,7 @@
       <div class="pdp-price">${price}</div>
       <p class="pdp-desc">${esc(pr.shortDesc)}</p>
       <div style="font-size:.86rem;color:${pr.stock==="out"?"var(--danger)":"var(--success)"};font-weight:600">${pr.stock==="out"?"● Currently sold out":"● In stock — ready to ship"}</div>
+      ${colorRow}
       <div class="pdp-buy">
         <div class="qty">
           <button id="qMinus" aria-label="Decrease">−</button>
@@ -87,15 +100,26 @@
       </div>
       <div class="accordion" id="pdpAccordion">
         <div class="accordion__item"><button class="accordion__head">Description <span class="pm">+</span></button><div class="accordion__body"><p>${esc(pr.longDesc || pr.shortDesc)}</p></div></div>
-        <div class="accordion__item"><button class="accordion__head">Product Details <span class="pm">+</span></button><div class="accordion__body"><p>Product ID: ${pr.id}<br>Colour: ${esc(pr.color)}<br>Category: ${esc(Store.categoryName(pr.category))}</p></div></div>
+        <div class="accordion__item"><button class="accordion__head">Product Details <span class="pm">+</span></button><div class="accordion__body"><p>Product ID: ${pr.id}<br>Colour: ${esc(pr.color)}${hasColors ? "<br>Colour options: " + pr.colors.map(esc).join(", ") : ""}<br>Category: ${esc(Store.categoryName(pr.category))}</p></div></div>
         <div class="accordion__item"><button class="accordion__head">Delivery & Ordering <span class="pm">+</span></button><div class="accordion__body"><p>Add to cart and checkout via WhatsApp — we'll confirm delivery or pickup and timing directly in chat. Free island-wide delivery on orders over ${money(FE.CONFIG.freeShipThreshold)}.</p></div></div>
       </div>`;
+
+    // Colour chips → update selection + label.
+    FE.$$("#pdpInfo [data-color-pick]").forEach((b) => b.onclick = () => {
+      selColor = b.getAttribute("data-color");
+      FE.$$("#pdpInfo .color-chip").forEach((ch) => {
+        const on = ch === b;
+        ch.classList.toggle("is-selected", on);
+        ch.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      const nm = FE.$("#pdpColorName"); if (nm) nm.textContent = selColor;
+    });
 
     const qVal = FE.$("#qVal");
     FE.$("#qPlus").onclick = () => { qty++; qVal.textContent = qty; };
     FE.$("#qMinus").onclick = () => { if (qty > 1) { qty--; qVal.textContent = qty; } };
     const addBtn = FE.$("#pdpAdd");
-    if (addBtn) addBtn.onclick = () => { Cart.add(pr.id, qty); UI.toast("Added to cart", true); UI.openCart(); };
+    if (addBtn) addBtn.onclick = () => { Cart.add(pr.id, qty, selColor); UI.toast("Added to cart", true); UI.openCart(); };
 
     FE.$$("[data-share]").forEach(b => b.onclick = () => {
       const url = location.href;
