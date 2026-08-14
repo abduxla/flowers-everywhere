@@ -180,7 +180,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .icon-btn { width: 42px; height: 42px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: var(--charcoal); transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); position: relative; }
 .icon-btn:hover { background: var(--cream); transform: translateY(-1px); }
 .icon-btn svg { width: 21px; height: 21px; }
-.cart-count { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.64rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
+.cart-count { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #FF87F4; color: #fff; font-size: 0.64rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
 .cart-count.show { display: flex; }
 .menu-toggle { display: none; }
 
