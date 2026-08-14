@@ -32,7 +32,12 @@
   let sessionUploads = [];         // cPanel URLs uploaded during THIS form session
   let originalImages = [];         // the product's images when the form opened
   let committed = false;           // true once the product is saved
-  const MEM = { products: [], categories: [] };  // live cache from Supabase
+  // Project (event/venue showcase) form state
+  let pImage = "";                 // current project photo URL
+  let pOriginalImage = "";         // photo when the form opened
+  let pSessionUpload = "";         // photo uploaded during THIS session
+  let pCommitted = false;
+  const MEM = { products: [], categories: [], projects: [] };  // live cache from Supabase
 
   /* ---------------- Data cache ---------------- */
   async function loadAll() {
@@ -46,6 +51,12 @@
     MEM.categories = (cr.data || []).map((c) => ({
       key: c.key, name: c.name, palette: c.palette, blurb: c.blurb, sort: c.sort,
     }));
+    // Projects table may not exist yet (until the SQL is run) — load it
+    // separately so a missing table never breaks the admin.
+    try {
+      const prj = await SB.from("projects").select("*").order("sort", { ascending: true });
+      MEM.projects = (prj.error || !prj.data) ? [] : prj.data;
+    } catch (e) { MEM.projects = []; }
   }
   const all = () => MEM.products.map((p) => Object.assign({}, p));
   const cats = () => MEM.categories;
@@ -433,6 +444,110 @@
     } catch (e2) { toast("Add failed: " + (e2.message || e2)); }
   }
 
+  /* ---------------- Projects (event/venue showcase) ---------------- */
+  const pById = (id) => MEM.projects.find((p) => String(p.id) === String(id));
+
+  function renderProjects() {
+    const rows = MEM.projects;
+    $("#projectRows").innerHTML = rows.map((p) => `
+      <tr>
+        <td><img class="thumb" src="${esc(p.image || "")}" alt="" onerror="this.style.visibility='hidden'"></td>
+        <td><strong>${esc(p.title || "")}</strong></td>
+        <td class="hide-sm">${esc(p.type || "")}</td>
+        <td class="hide-sm">${p.published === false ? '<span class="tag tag--off">Hidden</span>' : '<span class="tag tag--on">Live</span>'}</td>
+        <td><div class="tbl-actions">
+          <button title="Edit" data-pedit="${p.id}">✎</button>
+          <button title="Delete" data-pdel="${p.id}">🗑</button>
+        </div></td>
+      </tr>`).join("") || '<tr><td colspan="5" style="text-align:center;padding:40px" class="muted">No projects yet. Click “Add Project”.</td></tr>';
+    $$("#projectRows [data-pedit]").forEach((b) => b.onclick = () => openProjectForm(b.getAttribute("data-pedit")));
+    $$("#projectRows [data-pdel]").forEach((b) => b.onclick = () => delProject(b.getAttribute("data-pdel")));
+  }
+
+  function renderProjectImage() {
+    const box = $("#pImgPreview");
+    box.innerHTML = pImage
+      ? `<div class="img-preview"><img src="${esc(pImage)}" alt=""><button type="button" data-prm aria-label="Remove">×</button></div>`
+      : '<p class="muted" style="font-size:.84rem">No photo yet — upload one or paste a URL.</p>';
+    const rm = box.querySelector("[data-prm]");
+    if (rm) rm.onclick = () => {
+      if (pImage && pSessionUpload === pImage) { deleteUploadedImage(pImage); pSessionUpload = ""; }
+      pImage = ""; renderProjectImage();
+    };
+  }
+
+  function openProjectForm(id) {
+    const p = id ? pById(id) : null;
+    $("#projectModalTitle").textContent = id ? "Edit Project" : "Add Project";
+    $("#pf_id").value = p ? p.id : "";
+    $("#pf_title").value = p ? (p.title || "") : "";
+    $("#pf_type").value = p ? (p.type || "") : "";
+    $("#pf_blurb").value = p ? (p.blurb || "") : "";
+    $("#pf_sort").value = p ? (p.sort != null ? p.sort : 0) : (MEM.projects.length + 1);
+    $("#pf_published").value = p ? String(p.published !== false) : "true";
+    pImage = p ? (p.image || "") : "";
+    pOriginalImage = pImage; pSessionUpload = ""; pCommitted = false;
+    renderProjectImage();
+    $("#projectModal").classList.add("open");
+  }
+  function closeProjectForm() {
+    if (!pCommitted && pSessionUpload) deleteUploadedImage(pSessionUpload);
+    $("#projectModal").classList.remove("open");
+    pImage = ""; pOriginalImage = ""; pSessionUpload = ""; pCommitted = false;
+  }
+
+  async function handleProjectFile(files) {
+    const f = Array.from(files).find((x) => x.type.startsWith("image/"));
+    if (!f) return;
+    try {
+      toast("Uploading photo…");
+      const blob = await compressToBlob(f);
+      const url = await uploadImage(blob);
+      if (pImage && pSessionUpload === pImage) deleteUploadedImage(pImage);
+      pImage = url; pSessionUpload = url;
+      renderProjectImage();
+    } catch (err) { toast("Image upload failed: " + (err.message || err)); }
+  }
+
+  async function saveProject(e) {
+    e.preventDefault();
+    const title = $("#pf_title").value.trim();
+    if (!title) { toast("Title is required"); return; }
+    const row = {
+      title,
+      type: $("#pf_type").value.trim(),
+      blurb: $("#pf_blurb").value.trim(),
+      image: pImage,
+      sort: Math.round(Number($("#pf_sort").value) || 0),
+      published: $("#pf_published").value === "true",
+    };
+    const id = $("#pf_id").value;
+    const btn = $("#projectForm").querySelector('button[type="submit"]');
+    const old = btn.textContent; btn.textContent = "Saving…"; btn.disabled = true;
+    try {
+      let error;
+      if (id) { ({ error } = await SB.from("projects").update(row).eq("id", id)); }
+      else { ({ error } = await SB.from("projects").insert(row)); }
+      if (error) throw error;
+      pCommitted = true;
+      if (pOriginalImage && pOriginalImage !== pImage) deleteUploadedImage(pOriginalImage);
+      await loadAll(); closeProjectForm(); renderProjects(); toast("Saved — live on your Projects page");
+    } catch (err) {
+      toast("Save failed: " + (err.message || err));
+    } finally { btn.textContent = old; btn.disabled = false; }
+  }
+
+  async function delProject(id) {
+    if (!confirm("Delete this project permanently? This cannot be undone.")) return;
+    try {
+      const p = pById(id);
+      const { error } = await SB.from("projects").delete().eq("id", id);
+      if (error) throw error;
+      if (p && p.image) deleteUploadedImage(p.image);
+      await loadAll(); renderProjects(); toast("Project deleted");
+    } catch (e) { toast("Delete failed: " + (e.message || e)); }
+  }
+
   /* ---------------- Backup export (optional) ---------------- */
   function exportJson() {
     const a = document.createElement("a");
@@ -448,6 +563,7 @@
     $$(".admin-nav a").forEach((a) => a.classList.toggle("active", a.getAttribute("data-view") === view));
     if (view === "dashboard") renderDashboard();
     if (view === "products") renderTable();
+    if (view === "projects") renderProjects();
     if (view === "categories") renderCategories();
   }
 
@@ -466,6 +582,24 @@
     $("#addColorBtn").onclick = addFormColor;
     $("#f_coloradd").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFormColor(); } });
     $("#colorPhotoInput").onchange = () => { handleColorPhoto($("#colorPhotoInput").files); $("#colorPhotoInput").value = ""; };
+
+    // Projects
+    $("#addProjectBtn").onclick = () => openProjectForm(null);
+    $("#projectModalClose").onclick = closeProjectForm;
+    $("#projectModalCancel").onclick = closeProjectForm;
+    $("#projectForm").onsubmit = saveProject;
+    $("#projectModal").addEventListener("click", (e) => { if (e.target.id === "projectModal") closeProjectForm(); });
+    const pdz = $("#pDropzone"), pfi = $("#pFileInput");
+    pdz.onclick = () => pfi.click();
+    pfi.onchange = () => handleProjectFile(pfi.files);
+    ["dragenter", "dragover"].forEach((ev) => pdz.addEventListener(ev, (e) => { e.preventDefault(); pdz.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach((ev) => pdz.addEventListener(ev, (e) => { e.preventDefault(); pdz.classList.remove("drag"); }));
+    pdz.addEventListener("drop", (e) => handleProjectFile(e.dataTransfer.files));
+    $("#pAddImgUrl").onclick = () => {
+      const u = $("#pImgUrl").value.trim(); if (!u) return;
+      if (pImage && pSessionUpload === pImage) { deleteUploadedImage(pImage); pSessionUpload = ""; }
+      pImage = u; $("#pImgUrl").value = ""; renderProjectImage();
+    };
 
     $("#searchTable").oninput = (e) => { tState.q = e.target.value; renderTable(); };
     $("#filterCat").onchange = (e) => { tState.cat = e.target.value; renderTable(); };

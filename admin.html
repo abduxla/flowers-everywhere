@@ -33,6 +33,7 @@
       <nav class="admin-nav">
         <a data-view="dashboard" class="active">▦ Dashboard</a>
         <a data-view="products">✿ Products</a>
+        <a data-view="projects">✦ Projects</a>
         <a data-view="categories">☰ Categories</a>
         <a data-view="settings">⚙ Data & Settings</a>
       </nav>
@@ -93,6 +94,20 @@
             </div>
             <div class="field" style="align-self:end"><button class="btn btn--primary" type="submit">Add Category</button></div>
           </form>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section class="admin-view hidden" id="view-projects">
+        <div class="admin-topbar"><h1>Projects</h1><button class="btn btn--primary" id="addProjectBtn">+ Add Project</button></div>
+        <div class="admin-panel">
+          <p class="muted" style="margin-bottom:14px;font-size:.9rem">Showcase your event & venue work. These appear on the storefront <strong>Projects</strong> page. Add your own photos anytime — the starter examples can be edited or deleted.</p>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th></th><th>Title</th><th class="hide-sm">Type</th><th class="hide-sm">Status</th><th>Actions</th></tr></thead>
+              <tbody id="projectRows"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -168,6 +183,41 @@
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
           <button class="btn btn--ghost" type="button" id="modalCancel">Cancel</button>
           <button class="btn btn--primary" type="submit">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PROJECT MODAL -->
+  <div class="modal" id="projectModal">
+    <div class="modal__card">
+      <div class="modal__head"><h2 id="projectModalTitle">Add Project</h2><button class="icon-btn" id="projectModalClose" aria-label="Close"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <form id="projectForm">
+        <input type="hidden" id="pf_id">
+        <div class="field-row">
+          <div class="field"><label>Title <span class="req">*</span></label><input id="pf_title" required></div>
+          <div class="field"><label>Type</label><input id="pf_type" placeholder="e.g. Wedding, Corporate, Hotel"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="pf_blurb" placeholder="One or two lines about the project"></textarea></div>
+        <div class="field">
+          <label>Project Photo</label>
+          <div class="dropzone" id="pDropzone">
+            <strong>Drag &amp; drop a photo here</strong><br><span style="font-size:.84rem">or click to browse — auto-optimised, saved to your host</span>
+            <input type="file" id="pFileInput" accept="image/*" hidden>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input id="pImgUrl" placeholder="…or paste an image URL" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm)">
+            <button class="btn btn--ghost btn--sm" type="button" id="pAddImgUrl">Add URL</button>
+          </div>
+          <div class="img-previews" id="pImgPreview"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Sort order (lower = first)</label><input id="pf_sort" type="number" step="1" value="0"></div>
+          <div class="field"><label>Status</label><select id="pf_published"><option value="true">Published (visible)</option><option value="false">Hidden</option></select></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+          <button class="btn btn--ghost" type="button" id="projectModalCancel">Cancel</button>
+          <button class="btn btn--primary" type="submit">Save Project</button>
         </div>
       </form>
     </div>
