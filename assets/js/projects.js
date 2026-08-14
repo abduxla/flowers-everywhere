@@ -4,6 +4,9 @@
 (function () {
   const { UI, esc, CONFIG, genSVG } = window.FE;
 
+  // Set `image` to a real photo URL (e.g. a cPanel img.flowerseverywhere.lk
+  // link) to show the shop's actual project photo. Leave it "" for the
+  // on-brand placeholder until the real photo is added.
   const PROJECTS = [
     { title: "Garden Wedding Arch", type: "Wedding", palette: "blush", image: "",
       blurb: "A four-metre floral arch in blush roses, peonies and trailing eucalyptus for a private garden ceremony." },
@@ -21,8 +24,8 @@
 
   function projectCard(p) {
     const img = p.image ? p.image : genSVG({ palette: p.palette, name: p.title }, 0);
-    return `<article class="project-card reveal">
-      <div class="project-card__media"><img src="${esc(img)}" alt="${esc(p.title)}" loading="lazy"></div>
+    return `<article class="project-card reveal${p.image ? "" : " project-card--placeholder"}">
+      <div class="project-card__media"><img src="${esc(img)}" alt="${esc(p.title)}" loading="lazy">${p.image ? "" : '<span class="project-card__ph">Photo coming soon</span>'}</div>
       <div class="project-card__body">
         <span class="project-card__tag">${esc(p.type)}</span>
         <h3 class="project-card__title">${esc(p.title)}</h3>
