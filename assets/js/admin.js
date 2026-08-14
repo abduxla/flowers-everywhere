@@ -5,7 +5,7 @@
    Requires: supabase-js CDN + supabase-config.js loaded before this.
    ===================================================================== */
 (function () {
-  const { esc, money, slugify, productImage, I, CONFIG } = window.FE;
+  const { esc, money, slugify, productImage, I, CONFIG, colorBg } = window.FE;
   const $ = FE.$, $$ = FE.$$;
   const SB = window.FE_SB;
   const H = window.FE_SB_HELPERS;
@@ -26,6 +26,8 @@
 
   let editingId = null;
   let formColors = [];             // colour options a customer can choose (variants)
+  let formColorImages = [];        // photo URL per colour (parallel to formColors; "" = none)
+  let activeColorIdx = null;       // which colour a photo upload is targeting
   let formImages = [];             // array of image URLs (cPanel or pasted)
   let sessionUploads = [];         // cPanel URLs uploaded during THIS form session
   let originalImages = [];         // the product's images when the form opened
@@ -152,8 +154,9 @@
       const prod = byId(id);
       const { error } = await SB.from("products").delete().eq("id", id);
       if (error) throw error;
-      // Free the product's hosted image(s) too.
+      // Free the product's hosted image(s) too — main photo(s) + colour photos.
       if (prod && Array.isArray(prod.images)) prod.images.forEach(deleteUploadedImage);
+      if (prod && Array.isArray(prod.colorImages)) prod.colorImages.forEach(deleteUploadedImage);
       await loadAll(); renderTable(); renderDashboard(); toast("Deleted");
     } catch (e) { toast("Delete failed: " + (e.message || e)); }
   }
@@ -166,9 +169,9 @@
     editingId = id || null;
     const p = id ? byId(id) : null;
     formImages = p && p.images ? p.images.slice() : [];
-    originalImages = formImages.slice();
     sessionUploads = [];
     committed = false;
+    activeColorIdx = null;
     $("#modalTitle").textContent = id ? "Edit Product" : "Add Product";
     $("#f_id").value = p ? p.id : nextId();
     $("#f_name").value = p ? p.name : "";
@@ -181,6 +184,11 @@
       ? Math.round((p.oldPrice - p.price) / p.oldPrice * 100) : "";
     $("#f_color").value = p ? p.color : "";
     formColors = p && Array.isArray(p.colors) ? p.colors.slice() : [];
+    formColorImages = p && Array.isArray(p.colorImages) ? p.colorImages.slice() : [];
+    while (formColorImages.length < formColors.length) formColorImages.push("");
+    // Everything the product had on disk — main image(s) + colour photos — so
+    // we can delete the ones dropped/replaced when the edit is saved.
+    originalImages = formImages.concat(formColorImages).filter(Boolean);
     renderFormColors();
     $("#f_stock").value = p ? p.stock : "in";
     $("#f_status").value = p ? (p.status || "published") : "published";
@@ -199,25 +207,68 @@
     // they don't orphan on the host.
     if (!committed) sessionUploads.forEach(deleteUploadedImage);
     $("#productModal").classList.remove("open");
-    editingId = null; formImages = []; formColors = []; sessionUploads = []; originalImages = []; committed = false;
+    editingId = null; formImages = []; formColors = []; formColorImages = [];
+    sessionUploads = []; originalImages = []; committed = false; activeColorIdx = null;
   }
 
   /* ---------------- Colour options (variants) ---------------- */
+  // Each colour is a row: a swatch of the actual colour, its name, a photo
+  // (customers see this photo when they pick the colour), and a remove button.
   function renderFormColors() {
     const box = $("#colorChips"); if (!box) return;
-    box.innerHTML = formColors.map((c, i) =>
-      `<span class="admin-color-chip">${esc(c)}<button type="button" data-crm="${i}" aria-label="Remove ${esc(c)}">×</button></span>`
-    ).join("") || '<span class="muted" style="font-size:.82rem">No colour options — single-colour product.</span>';
-    box.querySelectorAll("[data-crm]").forEach((b) => b.onclick = () => {
-      formColors.splice(+b.getAttribute("data-crm"), 1);
-      renderFormColors();
+    if (!formColors.length) { box.innerHTML = '<span class="muted" style="font-size:.82rem">No colour options — single-colour product.</span>'; return; }
+    box.innerHTML = formColors.map((c, i) => {
+      const img = formColorImages[i];
+      const thumb = img
+        ? `<img src="${esc(img)}" alt="" class="cvar-thumb">`
+        : `<span class="cvar-thumb cvar-thumb--empty">＋<small>Photo</small></span>`;
+      return `<div class="cvar-row">
+        <span class="cvar-dot" style="background:${colorBg(c)}"></span>
+        <span class="cvar-name">${esc(c)}</span>
+        <button type="button" class="cvar-photo" data-cphoto="${i}" title="Set the photo shown when a customer picks ${esc(c)}">${thumb}</button>
+        <button type="button" class="cvar-del" data-crm="${i}" aria-label="Remove ${esc(c)}">×</button>
+      </div>`;
+    }).join("");
+    box.querySelectorAll("[data-crm]").forEach((b) => b.onclick = () => removeColor(+b.getAttribute("data-crm")));
+    box.querySelectorAll("[data-cphoto]").forEach((b) => b.onclick = () => {
+      activeColorIdx = +b.getAttribute("data-cphoto");
+      $("#colorPhotoInput").click();
     });
   }
   function addFormColor() {
     const inp = $("#f_coloradd"); const v = (inp.value || "").trim();
     if (!v) return;
-    if (!formColors.some((c) => c.toLowerCase() === v.toLowerCase())) formColors.push(v);
+    if (!formColors.some((c) => c.toLowerCase() === v.toLowerCase())) { formColors.push(v); formColorImages.push(""); }
     inp.value = ""; inp.focus(); renderFormColors();
+  }
+  function removeColor(i) {
+    const img = formColorImages[i];
+    if (img && sessionUploads.includes(img)) {
+      deleteUploadedImage(img);
+      sessionUploads = sessionUploads.filter((u) => u !== img);
+    }
+    formColors.splice(i, 1);
+    formColorImages.splice(i, 1);
+    renderFormColors();
+  }
+  // Upload/replace the photo for the colour the user tapped.
+  async function handleColorPhoto(files) {
+    const f = Array.from(files).find((x) => x.type.startsWith("image/"));
+    if (!f || activeColorIdx == null) return;
+    const idx = activeColorIdx;
+    try {
+      toast("Uploading colour photo…");
+      const blob = await compressToBlob(f);
+      const url = await uploadImage(blob);
+      const prev = formColorImages[idx];
+      if (prev && sessionUploads.includes(prev)) {
+        deleteUploadedImage(prev);
+        sessionUploads = sessionUploads.filter((u) => u !== prev);
+      }
+      formColorImages[idx] = url;
+      sessionUploads.push(url);
+      renderFormColors();
+    } catch (err) { toast("Colour photo upload failed: " + (err.message || err)); }
   }
 
   function renderFormImages() {
@@ -257,6 +308,7 @@
       oldPrice: hasDisc ? price : null,
       color: $("#f_color").value.trim() || "Blush",
       colors: formColors.slice(),
+      colorImages: formColorImages.slice(),
       stock: $("#f_stock").value,
       status: $("#f_status").value,
       shortDesc: $("#f_short").value.trim(),
@@ -272,9 +324,11 @@
     try {
       await persistRow(data);
       committed = true;
-      // Edit that dropped/replaced an original image → delete the old file.
+      // Edit that dropped/replaced an original image (main OR colour photo) →
+      // delete the now-unused file.
+      const keep = data.images.concat(data.colorImages || []);
       originalImages
-        .filter((u) => !data.images.includes(u))
+        .filter((u) => keep.indexOf(u) < 0)
         .forEach(deleteUploadedImage);
       await loadAll(); closeForm(); renderTable(); renderDashboard(); toast("Saved — live on your store");
     } catch (err) {
@@ -411,6 +465,7 @@
 
     $("#addColorBtn").onclick = addFormColor;
     $("#f_coloradd").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFormColor(); } });
+    $("#colorPhotoInput").onchange = () => { handleColorPhoto($("#colorPhotoInput").files); $("#colorPhotoInput").value = ""; };
 
     $("#searchTable").oninput = (e) => { tState.q = e.target.value; renderTable(); };
     $("#filterCat").onchange = (e) => { tState.cat = e.target.value; renderTable(); };

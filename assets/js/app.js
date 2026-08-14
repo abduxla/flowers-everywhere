@@ -205,11 +205,15 @@
     for (let i = parts.length - 1; i >= 0; i--) { if (COLOR_HEX[parts[i]]) return COLOR_HEX[parts[i]]; }
     return null;
   }
+  // CSS background for a colour name: its hex, or a soft multi-tone dot when
+  // the name isn't recognised.
+  function colorBg(name) {
+    const hex = colorHex(name);
+    return hex ? hex : "conic-gradient(from 0deg,#e7cfc6,#a9b7a5,#c9a24b,#c8a2c8,#e7cfc6)";
+  }
   function colorDot(name) {
     const hex = colorHex(name);
-    const style = hex
-      ? "background:" + hex + (hex === "#FFFFFF" ? ";box-shadow:inset 0 0 0 1px var(--line)" : "")
-      : "background:conic-gradient(from 0deg,#e7cfc6,#a9b7a5,#c9a24b,#c8a2c8,#e7cfc6)";
+    const style = "background:" + colorBg(name) + (hex === "#FFFFFF" ? ";box-shadow:inset 0 0 0 1px var(--line)" : "");
     return '<span class="color-dot" style="' + style + '"></span>';
   }
 
@@ -376,9 +380,16 @@
         ? `${money(p.price)}<span class="was">${money(p.oldPrice)}</span>`
         : money(p.price);
       const href = "product.html?id=" + encodeURIComponent(p.id);
+      // Dot-only colour swatches. Each carries its colour's own photo (or the
+      // main photo when none is set) so picking a colour swaps the card image.
+      const mainImg = productImage(p, 0);
       const colorPicker = (Array.isArray(p.colors) && p.colors.length)
         ? `<div class="color-picker" data-color-group="${p.id}" aria-label="Choose colour">
-            ${p.colors.map((c, i) => `<button type="button" class="color-chip${i === 0 ? " is-selected" : ""}" data-color-pick="${p.id}" data-color="${esc(c)}" title="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}">${colorDot(c)}<span>${esc(c)}</span></button>`).join("")}
+            ${p.colors.map((c, i) => {
+              const vimg = (p.colorImages && p.colorImages[i]) ? p.colorImages[i] : mainImg;
+              const wRing = colorHex(c) === "#FFFFFF" ? " color-swatch--white" : "";
+              return `<button type="button" class="color-swatch${i === 0 ? " is-selected" : ""}${wRing}" data-color-pick="${p.id}" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${colorBg(c)}" title="${esc(c)}" aria-label="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}"></button>`;
+            }).join("")}
           </div>`
         : "";
       return `<article class="product-card reveal${p.stock === "out" ? " is-out" : ""}" data-id="${p.id}">
@@ -513,19 +524,24 @@
       document.addEventListener("click", (e) => {
         const add = e.target.closest("[data-add]");
         if (add) { e.preventDefault(); Cart.add(add.getAttribute("data-add"), 1); this.toast("Added to cart", true); this.openCart(); }
-        // Colour chip on a card — select it, and if the item is already in
-        // the cart update its colour immediately.
+        // Colour swatch on a card — select it, swap the card photo to that
+        // colour's image, and if the item is already in the cart update its
+        // colour immediately.
         const cpick = e.target.closest("[data-color-pick]");
         if (cpick) {
           e.preventDefault();
           const cid = cpick.getAttribute("data-color-pick");
           const color = cpick.getAttribute("data-color");
+          const vimg = cpick.getAttribute("data-img");
           const group = cpick.closest("[data-color-group]");
-          if (group) group.querySelectorAll(".color-chip").forEach((ch) => {
+          if (group) group.querySelectorAll(".color-swatch").forEach((ch) => {
             const on = ch === cpick;
             ch.classList.toggle("is-selected", on);
             ch.setAttribute("aria-pressed", on ? "true" : "false");
           });
+          const card = cpick.closest(".product-card");
+          const media = card && card.querySelector(".product-card__media img");
+          if (media && vimg) { media.src = vimg; }
           if (Cart.qtyOf(cid) > 0) Cart.setColor(cid, color);
         }
         // Card quantity stepper (+/-) — adds/updates the cart in place,
@@ -749,7 +765,7 @@
   /* ------------------------------------------------------------------ */
   window.FE = {
     CONFIG, Store, Cart, WhatsApp, Analytics, UI, I, boot,
-    money, esc, slugify, $, $$, load, save, colorDot, colorHex,
+    money, esc, slugify, $, $$, load, save, colorDot, colorHex, colorBg,
     productImage, productGallery, imgHTML, webImgHTML, stockImage, stockImgHTML, genSVG, PALETTES,
   };
 })();

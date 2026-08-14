@@ -62,11 +62,16 @@
     // rides into the cart line and the WhatsApp order.
     const hasColors = Array.isArray(pr.colors) && pr.colors.length;
     let selColor = hasColors ? pr.colors[0] : "";
+    const pdpMainImg = FE.productImage(pr, 0);
     const colorRow = hasColors ? `
       <div class="pdp-colors" data-color-group="pdp">
         <span class="pdp-colors__label">Colour: <b id="pdpColorName">${esc(selColor)}</b></span>
         <div class="pdp-colors__chips">
-          ${pr.colors.map((c, i) => `<button type="button" class="color-chip${i === 0 ? " is-selected" : ""}" data-color-pick="pdp" data-color="${esc(c)}" title="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}">${FE.colorDot(c)}<span>${esc(c)}</span></button>`).join("")}
+          ${pr.colors.map((c, i) => {
+            const vimg = (pr.colorImages && pr.colorImages[i]) ? pr.colorImages[i] : pdpMainImg;
+            const wRing = FE.colorHex(c) === "#FFFFFF" ? " color-swatch--white" : "";
+            return `<button type="button" class="color-swatch${i === 0 ? " is-selected" : ""}${wRing}" data-color-pick="pdp" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${FE.colorBg(c)}" title="${esc(c)}" aria-label="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}"></button>`;
+          }).join("")}
         </div>
       </div>` : "";
 
@@ -104,15 +109,17 @@
         <div class="accordion__item"><button class="accordion__head">Delivery & Ordering <span class="pm">+</span></button><div class="accordion__body"><p>Add to cart and checkout via WhatsApp — we'll confirm delivery or pickup and timing directly in chat. Free island-wide delivery on orders over ${money(FE.CONFIG.freeShipThreshold)}.</p></div></div>
       </div>`;
 
-    // Colour chips → update selection + label.
+    // Colour swatches → update selection, label, and swap the main photo.
     FE.$$("#pdpInfo [data-color-pick]").forEach((b) => b.onclick = () => {
       selColor = b.getAttribute("data-color");
-      FE.$$("#pdpInfo .color-chip").forEach((ch) => {
+      const vimg = b.getAttribute("data-img");
+      FE.$$("#pdpInfo .color-swatch").forEach((ch) => {
         const on = ch === b;
         ch.classList.toggle("is-selected", on);
         ch.setAttribute("aria-pressed", on ? "true" : "false");
       });
       const nm = FE.$("#pdpColorName"); if (nm) nm.textContent = selColor;
+      const m = FE.$("#pdpMain img"); if (m && vimg) { m.src = vimg; }
     });
 
     const qVal = FE.$("#qVal");
