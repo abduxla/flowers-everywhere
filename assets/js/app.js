@@ -188,15 +188,41 @@
   // Best-effort map of common colour names → a swatch hex, so the chips
   // show a little dot. Unknown names fall back to a soft multi-tone dot.
   const COLOR_HEX = {
-    red:"#C0392B", crimson:"#B02A37", pink:"#F4A7B9", "hot pink":"#E84B8A", blush:"#E7CFC6",
-    white:"#FFFFFF", "off-white":"#F4F1E8", cream:"#F3EADB", ivory:"#F5F0E1",
-    yellow:"#F2C94C", mustard:"#D4A017", orange:"#E67E22", peach:"#FFCBA4", apricot:"#F4B26B",
-    purple:"#8E44AD", violet:"#7A4FB0", lavender:"#C7B8EA", lilac:"#C8A2C8", mauve:"#B784A7", plum:"#7B4A6B",
-    blue:"#3B7DD8", navy:"#2C3E70", "sky blue":"#87BCE8", teal:"#2A9D8F", turquoise:"#40C0C0",
-    green:"#4B7B5B", sage:"#A9B7A5", mint:"#B9E4C9", olive:"#7C7A3A", emerald:"#2E8B57",
-    burgundy:"#6E1E2B", maroon:"#7B2233", wine:"#722F37", gold:"#C9A24B", champagne:"#E9DCC3", bronze:"#B08D57",
-    black:"#2C2723", grey:"#9A9187", gray:"#9A9187", silver:"#C8C8C8", brown:"#8B5E3C", tan:"#D2B48C",
-    terracotta:"#B0674B", coral:"#FF7F6B", salmon:"#F09080", rose:"#D98C9A", fuchsia:"#C74B8B", magenta:"#C2185B",
+    // Pinks (the big one for flowers)
+    pink:"#F4A7B9", "light pink":"#F6C9D6", "pale pink":"#F3D3DC", "baby pink":"#F7C6D9",
+    "hot pink":"#E84B8A", "dark pink":"#D6478E", "deep pink":"#D6478E", "bright pink":"#EE5AA0",
+    "dusty pink":"#D9A6AE", "dusty rose":"#C48B8A", "rose pink":"#E58AA3", "blush pink":"#EAC4C4",
+    "nude pink":"#E7C4B8", nude:"#E3C4B0", "rose gold":"#E0B0A0", watermelon:"#F25C78",
+    blush:"#E7CFC6", rose:"#D98C9A", fuchsia:"#C74B8B", magenta:"#C2185B",
+    coral:"#FF7F6B", "coral pink":"#F6897A", salmon:"#F09080",
+    // Reds
+    red:"#C0392B", "dark red":"#8E1F1B", "wine red":"#6E1E2B", wine:"#722F37",
+    crimson:"#B02A37", scarlet:"#D0201A", cherry:"#B3122B", ruby:"#9B111E",
+    burgundy:"#6E1E2B", maroon:"#7B2233", "brick red":"#9C4A3C", brick:"#9C4A3C",
+    // Whites / creams
+    white:"#FFFFFF", "snow white":"#FBFBF8", "milk white":"#F7F4EE", "off-white":"#F4F1E8",
+    cream:"#F3EADB", ivory:"#F5F0E1", champagne:"#E9DCC3", pearl:"#EDE6DA",
+    // Purples
+    purple:"#8E44AD", violet:"#7A4FB0", lavender:"#C7B8EA", lilac:"#C8A2C8", mauve:"#B784A7",
+    plum:"#7B4A6B", orchid:"#C56FC0", amethyst:"#9966CC", aubergine:"#4B2E43", eggplant:"#4B2E43",
+    // Blues
+    blue:"#3B7DD8", "light blue":"#A9D0F0", "royal blue":"#2F5FCB", navy:"#2C3E70",
+    "sky blue":"#87BCE8", "baby blue":"#A9D0F0", "dusty blue":"#8FA6BC", "powder blue":"#B6CFE0",
+    cornflower:"#6B8FD6", teal:"#2A9D8F", turquoise:"#40C0C0",
+    // Greens (incl. foliage)
+    green:"#4B7B5B", "light green":"#8FB98A", "dark green":"#2E4C39", "forest green":"#244F3B",
+    forest:"#244F3B", "hunter green":"#35543F", sage:"#A9B7A5", mint:"#B9E4C9",
+    olive:"#7C7A3A", emerald:"#2E8B57", moss:"#6A7C4E", fern:"#5B7A4B", eucalyptus:"#A6B8A0",
+    // Yellows / oranges / golds
+    yellow:"#F2C94C", lemon:"#F5E05A", mustard:"#D4A017", gold:"#C9A24B",
+    orange:"#E67E22", "burnt orange":"#C4602A", tangerine:"#F28C28", peach:"#FFCBA4",
+    apricot:"#F4B26B", terracotta:"#B0674B", rust:"#A5502E", amber:"#C68A2E", bronze:"#B08D57",
+    // Neutrals / browns
+    brown:"#8B5E3C", tan:"#D2B48C", taupe:"#B8A99A", beige:"#E4D5C3", khaki:"#B3A369",
+    chocolate:"#5C4033", coffee:"#6F4E37", camel:"#C19A6B", mocha:"#7E6551", caramel:"#B3702A",
+    // Greys / black
+    black:"#2C2723", charcoal:"#3A3A3A", grey:"#9A9187", gray:"#9A9187",
+    "light grey":"#C7C1B8", "dark grey":"#5A5550", silver:"#C8C8C8",
   };
   function colorHex(name) {
     const k = String(name || "").trim().toLowerCase();
