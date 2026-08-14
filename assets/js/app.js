@@ -436,7 +436,7 @@
               <a href="index.html#collections">Collections</a>
             </nav>
           </div>
-          <a class="brand" href="index.html"><span class="mark">${I.mark}</span><span class="brand-txt">Flowers Everywhere<small>${esc(CONFIG.tagline)}</small></span></a>
+          <a class="brand" href="index.html"><img class="brand__logo" src="assets/img/logo.png" alt="Flowers Everywhere"></a>
           <div class="nav-actions">
             <button class="icon-btn" id="openSearch" aria-label="Search">${I.search}</button>
             <button class="icon-btn" id="openCart" aria-label="Cart">${I.bag}<span class="cart-count" id="cartCount">0</span></button>
@@ -456,7 +456,7 @@
         <div class="mobile-nav__panel">
           <div class="mobile-nav__head">
             <button class="icon-btn" data-close-menu aria-label="Close">${I.close}</button>
-            <span class="brand" style="font-size:1.15rem;flex:1;justify-content:center">${CONFIG.brand}</span>
+            <span class="brand" style="flex:1;justify-content:center"><img class="brand__logo" src="assets/img/logo.png" alt="Flowers Everywhere"></span>
             <span style="width:42px"></span>
           </div>
           <nav class="m-links" aria-label="Mobile">
@@ -589,7 +589,7 @@
         <div class="container">
           <div class="footer-grid">
             <div class="footer-brand">
-              <a class="brand" href="index.html"><span class="mark">${I.mark}</span><span class="brand-txt">Flowers Everywhere</span></a>
+              <a class="brand" href="index.html"><img class="brand__logo" src="assets/img/logo.png" alt="Flowers Everywhere"></a>
               <p>Sri Lanka's premium destination for lifelike artificial flowers and decorative pieces — beautifully crafted to last, and easy to order over WhatsApp.</p>
               <div class="social-row">
                 <a href="${CONFIG.tiktok}" target="_blank" rel="noopener" aria-label="TikTok">${I.tt}</a>

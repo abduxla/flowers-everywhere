@@ -156,6 +156,14 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .brand .mark svg { width: 100%; height: 100%; display: block; }
 .brand-txt { white-space: nowrap; line-height: 1.05; }
 .brand-txt small { display: block; font-family: var(--font-body); font-size: 0.56rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent-deep); margin-top: -2px; white-space: nowrap; }
+/* Brand wordmark logo (client's pink logo — replaces the old icon + text lockup) */
+.brand__logo { display: block; height: 46px; width: auto; }
+.site-header .brand__logo { height: 44px; }
+.footer-brand .brand__logo { height: 60px; margin-bottom: 4px; }
+.mobile-nav .brand__logo { height: 40px; }
+.admin-side .brand__logo { height: 42px; }
+.admin-login__card .brand__logo { height: 56px; }
+@media (max-width: 640px) { .site-header .brand__logo { height: 36px; } }
 .nav-links { display: flex; align-items: center; gap: 30px; }
 .nav-links a { font-size: 0.82rem; letter-spacing: 0.06em; font-weight: 500; color: var(--text); position: relative; padding: 6px 0; }
 .nav-links a::after { content: ""; position: absolute; left: 0; bottom: 0; height: 1.5px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: right; transition: transform var(--dur) var(--ease); }
