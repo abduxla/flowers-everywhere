@@ -11,8 +11,8 @@
   const CONFIG = {
     brand: "Flowers Everywhere",
     tagline: "Artificial Flowers & Home Décor",
-    waNumber: "94777888870",              // digits only, intl format (0777888870)
-    phoneDisplay: "+94 77 788 8870",
+    waNumber: "94705254433",              // digits only, intl format (070 525 4433)
+    phoneDisplay: "+94 70 5254433",
     tiktok: "https://www.tiktok.com/@flowercenter.colombo",
     tiktokHandle: "@flowercenter.colombo",
     domain: "flowerseverywhere.lk",
@@ -316,7 +316,18 @@
       return {
         ref: ref,
         date: new Date().toISOString(),
-        items: lines.map(l => ({ name: l.product.name, id: l.product.id, color: l.color || "", qty: l.qty, unit: l.product.price, total: l.total })),
+        items: lines.map(l => {
+          const p = l.product;
+          // Thumbnail for the invoice — the chosen colour's photo if it has
+          // one, else the product's main photo (real URLs only; skip the
+          // generated placeholder so the invoice link stays small).
+          let image = (p.images && p.images[0]) || "";
+          if (l.color && Array.isArray(p.colors) && Array.isArray(p.colorImages)) {
+            const ci = p.colors.findIndex(c => String(c).toLowerCase() === l.color.toLowerCase());
+            if (ci >= 0 && p.colorImages[ci]) image = p.colorImages[ci];
+          }
+          return { name: p.name, id: p.id, color: l.color || "", image: image, qty: l.qty, unit: p.price, total: l.total };
+        }),
         totalItems: lines.reduce((s, l) => s + l.qty, 0),
         grandTotal: Cart.subtotal(),
       };
