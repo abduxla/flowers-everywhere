@@ -49,7 +49,7 @@
 
   --container: 1240px;
   --gutter: clamp(18px, 4vw, 48px);
-  --header-h: 76px;
+  --header-h: 88px;
 }
 
 /* ---------- Reset ---------- */
@@ -150,6 +150,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .nav-start { display: flex; align-items: center; gap: 30px; justify-self: start; min-width: 0; }
 .nav > .brand { justify-self: center; }
 .nav > .nav-actions { justify-self: end; }
+/* Desktop: logo on the left (prominent), nav links centered, actions right. */
+@media (min-width: 901px) {
+  .nav { grid-template-columns: auto 1fr auto; }
+  .nav > .brand { order: -1; justify-self: start; }
+  .nav-start { justify-self: center; }
+  .nav > .nav-actions { order: 1; }
+}
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; letter-spacing: 0.01em; color: var(--ink); }
 .brand .mark { transform: scale(1.1); }
 .brand .mark { width: 30px; height: 30px; flex: none; }
@@ -158,13 +165,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .brand-txt small { display: block; font-family: var(--font-body); font-size: 0.56rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent-deep); margin-top: -2px; white-space: nowrap; }
 /* Brand wordmark logo (client's pink logo — replaces the old icon + text lockup) */
 .brand__logo { display: block; height: 54px; width: auto; }
-.site-header .brand__logo { height: 56px; }
-.footer-brand .brand__logo { height: 74px; margin-bottom: 4px; }
-.mobile-nav .brand__logo { height: 50px; }
-.admin-side .brand__logo { height: 50px; }
-.admin-login__card .brand__logo { height: 66px; }
-@media (max-width: 900px) { .site-header .brand__logo { height: 50px; } }
-@media (max-width: 640px) { .site-header .brand__logo { height: 44px; } }
+.site-header .brand__logo { height: 72px; }
+.footer-brand .brand__logo { height: 78px; margin-bottom: 4px; }
+.mobile-nav .brand__logo { height: 52px; }
+.admin-side .brand__logo { height: 52px; }
+.admin-login__card .brand__logo { height: 70px; }
+@media (max-width: 900px) { .site-header .brand__logo { height: 58px; } }
+@media (max-width: 640px) { .site-header .brand__logo { height: 48px; } }
 .nav-links { display: flex; align-items: center; gap: 30px; }
 .nav-links a { font-size: 0.82rem; letter-spacing: 0.06em; font-weight: 500; color: var(--text); position: relative; padding: 6px 0; }
 .nav-links a::after { content: ""; position: absolute; left: 0; bottom: 0; height: 1.5px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: right; transition: transform var(--dur) var(--ease); }
@@ -209,7 +216,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 /* ===================== HERO ===================== */
 .hero { position: relative; overflow: hidden; }
-.hero-inner { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(24px, 4vw, 56px); align-items: center; min-height: clamp(520px, 78vh, 760px); padding-block: clamp(40px, 6vw, 80px); }
+.hero-inner { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(24px, 4vw, 56px); align-items: center; min-height: clamp(480px, 70vh, 720px); padding-block: clamp(14px, 2vw, 28px) clamp(36px, 5vw, 68px); }
 .hero-copy { max-width: 560px; }
 .hero-copy h1 { margin: 18px 0 20px; }
 .hero-copy .lead { max-width: 460px; }
@@ -619,7 +626,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .legal strong { color: var(--ink); font-weight: 600; }
 .legal a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 640px) {
-  :root { --gutter: 18px; }
+  :root { --gutter: 18px; --header-h: 70px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .why-grid { grid-template-columns: 1fr; }
