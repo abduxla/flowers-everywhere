@@ -309,42 +309,67 @@
       save(CONFIG.keys.orderSeq, seq);
       return "FE-" + new Date().getFullYear() + "-" + String(seq).padStart(6, "0");
     },
-    orderMessage(ref) {
+    // Snapshot the cart into a plain order object (exactly what the invoice
+    // shows and what we store).
+    buildOrder(ref) {
       const lines = Cart.lines();
-      const totalItems = lines.reduce((s, l) => s + l.qty, 0);
-      let msg = "🌸 Hello " + CONFIG.brand + "!\n\n";
-      msg += "I'd like to place an order.\n\n";
-      msg += "Order Reference: " + ref + "\n\n";
-      msg += DIV + "\n\n";
-      msg += "Order Summary\n";
-      lines.forEach((l, i) => {
-        msg += "\n" + (i + 1) + ".\n";
-        msg += "Product:\n" + l.product.name + "\n\n";
-        msg += "Product ID:\n" + l.product.id + "\n\n";
-        if (l.color) msg += "Colour:\n" + l.color + "\n\n";
-        msg += "Quantity:\n" + l.qty + "\n\n";
-        msg += "Unit Price:\n" + money(l.product.price) + "\n\n";
-        msg += "Subtotal:\n" + money(l.total) + "\n\n";
-        msg += DIV + "\n";
-      });
-      msg += "\nTotal Items:\n" + totalItems + "\n\n";
-      msg += "Grand Total:\n" + money(Cart.subtotal()) + "\n\n";
-      msg += "Please let me know whether these items are available and whether delivery or pickup is possible.\n\nThank you!";
-      msg += "\n\n" + DIV + "\n\n📄 Printable invoice (tap to open, then Print / Save as PDF to forward):\n" + this.invoiceUrl(ref);
-      return msg;
-    },
-    // Encodes the order into a link to invoice.html (order data rides in the
-    // URL hash — no backend/storage). The shop taps it to open a clean,
-    // printable invoice they can Save-as-PDF and forward to suppliers.
-    invoiceUrl(ref) {
-      const lines = Cart.lines();
-      const order = {
+      return {
         ref: ref,
         date: new Date().toISOString(),
         items: lines.map(l => ({ name: l.product.name, id: l.product.id, color: l.color || "", qty: l.qty, unit: l.product.price, total: l.total })),
         totalItems: lines.reduce((s, l) => s + l.qty, 0),
         grandTotal: Cart.subtotal(),
       };
+    },
+    orderMessage(ref, order, invoiceLink) {
+      let msg = "🌸 Hello " + CONFIG.brand + "!\n\n";
+      msg += "I'd like to place an order.\n\n";
+      msg += "Order Reference: " + ref + "\n\n";
+      msg += DIV + "\n\n";
+      msg += "Order Summary\n";
+      order.items.forEach((it, i) => {
+        msg += "\n" + (i + 1) + ".\n";
+        msg += "Product:\n" + it.name + "\n\n";
+        msg += "Product ID:\n" + it.id + "\n\n";
+        if (it.color) msg += "Colour:\n" + it.color + "\n\n";
+        msg += "Quantity:\n" + it.qty + "\n\n";
+        msg += "Unit Price:\n" + money(it.unit) + "\n\n";
+        msg += "Subtotal:\n" + money(it.total) + "\n\n";
+        msg += DIV + "\n";
+      });
+      msg += "\nTotal Items:\n" + order.totalItems + "\n\n";
+      msg += "Grand Total:\n" + money(order.grandTotal) + "\n\n";
+      msg += "Please let me know whether these items are available and whether delivery or pickup is possible.\n\nThank you!";
+      msg += "\n\n" + DIV + "\n\n📄 Printable invoice (tap to open, then Print / Save as PDF):\n" + invoiceLink;
+      return msg;
+    },
+    // Short, URL-safe id for the invoice link (unambiguous alphabet).
+    shortId() {
+      const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+      let s = "";
+      try {
+        const arr = crypto.getRandomValues(new Uint8Array(8));
+        for (let i = 0; i < 8; i++) s += a[arr[i] % a.length];
+      } catch (e) {
+        for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)];
+      }
+      return s;
+    },
+    // Store the order in Supabase and return a SHORT, clickable invoice link
+    // (…/invoice.html#Ab3xK9), or null if it couldn't be saved.
+    async saveOrder(order) {
+      try {
+        if (!window.FE_SB) return null;
+        const id = this.shortId();
+        const { error } = await window.FE_SB.from("orders").insert({ id: id, data: order });
+        if (error) return null;
+        const origin = (typeof location !== "undefined" && location.origin) ? location.origin : ("https://" + CONFIG.domain);
+        return origin + "/invoice.html#" + id;
+      } catch (e) { return null; }
+    },
+    // Fallback: the whole order encoded in the link (no backend needed). Long,
+    // but guarantees the invoice always works even if the DB save fails.
+    invoiceUrlInline(order) {
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(order))));
       const origin = (typeof location !== "undefined" && location.origin) ? location.origin : ("https://" + CONFIG.domain);
       return origin + "/invoice.html#" + b64;
@@ -353,8 +378,18 @@
       if (!Cart.count()) { UI.toast("Your cart is empty"); return; }
       const ref = this.nextOrderRef();
       Analytics.track("checkout");
-      const url = "https://wa.me/" + CONFIG.waNumber + "?text=" + encodeURIComponent(this.orderMessage(ref));
-      window.open(url, "_blank");
+      const order = this.buildOrder(ref);
+      // Reserve the tab inside the click gesture so the popup isn't blocked,
+      // then redirect it once we have the short invoice link.
+      const win = window.open("", "_blank");
+      const self = this;
+      // Don't let a slow/failed save hold the tab blank — fall back after 6s.
+      const timeout = new Promise(function (res) { setTimeout(function () { res(null); }, 6000); });
+      Promise.race([this.saveOrder(order), timeout]).then(function (shortUrl) {
+        const link = shortUrl || self.invoiceUrlInline(order);
+        const wa = "https://wa.me/" + CONFIG.waNumber + "?text=" + encodeURIComponent(self.orderMessage(ref, order, link));
+        if (win) { win.location.href = wa; } else { window.location.href = wa; }
+      });
     },
     inquiry(product) {
       const msg = "Hello " + CONFIG.brand + ", I'm interested in this product:\n\n" +

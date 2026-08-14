@@ -46,22 +46,36 @@
     <button class="btn" onclick="window.print()">Print / Save as PDF</button>
   </div>
   <div id="root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     var money = function (n) { return "Rs. " + Number(n || 0).toLocaleString("en-LK"); };
     var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); };
-    function decodeOrder() {
-      try {
-        var h = location.hash.replace(/^#/, "");
-        if (!h) return null;
-        return JSON.parse(decodeURIComponent(escape(atob(h))));
-      } catch (e) { return null; }
+    var SB = null;
+    try { SB = window.supabase.createClient("https://eqcjvaspagwmiezqmgiy.supabase.co", "sb_publishable_OiQz4PO-EoRZFnPbZAxeHw_nEhZaaPe"); } catch (e) {}
+
+    function decodeInline(h) {
+      try { return JSON.parse(decodeURIComponent(escape(atob(h)))); } catch (e) { return null; }
     }
-    var o = decodeOrder();
-    var root = document.getElementById("root");
-    if (!o || !o.items || !o.items.length) {
-      document.getElementById("bar").style.display = "none";
-      root.innerHTML = '<div class="empty"><h2>Invoice not found</h2><p>This link is missing its order details. Open it from the WhatsApp order message.</p></div>';
-    } else {
+    // The link carries either a short code (…#Ab3xK9 → look it up in Supabase)
+    // or, for older links, the whole order encoded inline.
+    async function loadOrder() {
+      var h = location.hash.replace(/^#/, "");
+      if (!h) return null;
+      if (/^[A-Za-z0-9]{6,14}$/.test(h) && SB) {
+        try {
+          var res = await SB.from("orders").select("data").eq("id", h).single();
+          if (res && res.data && res.data.data) return res.data.data;
+        } catch (e) {}
+      }
+      return decodeInline(h);
+    }
+    function render(o) {
+      var root = document.getElementById("root");
+      if (!o || !o.items || !o.items.length) {
+        document.getElementById("bar").style.display = "none";
+        root.innerHTML = '<div class="empty"><h2>Invoice not found</h2><p>This link is missing its order details. Open it from the WhatsApp order message.</p></div>';
+        return;
+      }
       var d = o.date ? new Date(o.date) : new Date();
       var rows = o.items.map(function (it, i) {
         return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(it.name) + '</b><br><span style="color:var(--muted);font-size:.78rem">' + esc(it.id || "") + (it.color ? ' · ' + esc(it.color) : '') + '</span></td>' +
@@ -87,6 +101,8 @@
         '</div>';
       document.title = "Invoice " + (o.ref || "") + " · Flowers Everywhere";
     }
+    document.getElementById("root").innerHTML = '<div class="empty"><p>Loading invoice…</p></div>';
+    loadOrder().then(render).catch(function () { render(null); });
   </script>
 </body>
 </html>
