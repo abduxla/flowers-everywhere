@@ -507,7 +507,7 @@
         </span>
       </a>`;
       const headerHtml = `
-      <div class="site-header" id="siteHeader">
+      <div class="site-header${active === "home" ? " home" : ""}" id="siteHeader">
         <div class="container nav">
           <div class="nav-start">
             <button class="icon-btn menu-toggle" id="openMenu" aria-label="Menu">${I.menu}</button>
