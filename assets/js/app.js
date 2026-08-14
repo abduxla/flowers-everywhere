@@ -505,6 +505,7 @@
               <a href="shop.html" ${active==="shop"?'class="active"':''}>Shop All</a>
               <a href="shop.html?filter=new">New Arrivals</a>
               <a href="shop.html?filter=best">Best Sellers</a>
+              <a href="projects.html" ${active==="projects"?'class="active"':''}>Projects</a>
               <a href="index.html#collections">Collections</a>
             </nav>
           </div>
@@ -536,6 +537,7 @@
             ${mLink("shop.html", "Shop All")}
             ${mLink("shop.html?filter=new", "New Arrivals")}
             ${mLink("shop.html?filter=best", "Best Sellers")}
+            ${mLink("projects.html", "Projects")}
             ${cats.map((c) => mLink("shop.html?category=" + c.key, c.name)).join("")}
           </nav>
           <div class="mobile-nav__foot">
