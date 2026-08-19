@@ -44,8 +44,39 @@
 
     // New arrivals
     UI.renderProducts(FE.$("#homeNew"), all.filter(p => p.isNew).slice(0, 4).length ? all.filter(p => p.isNew).slice(0, 4) : all.slice(0, 4));
-    // Best sellers
-    UI.renderProducts(FE.$("#homeBest"), all.filter(p => p.isBest).slice(0, 4).length ? all.filter(p => p.isBest).slice(0, 4) : all.slice(4, 8));
+    // Best sellers — one big auto-rotating image showcase (pictures only).
+    (function () {
+      const wrap = FE.$("#homeBest");
+      if (!wrap) return;
+      const bestList = all.filter(p => p.isBest);
+      const list = (bestList.length ? bestList : all.slice(4, 12)).slice(0, 6);
+      if (!list.length) { wrap.style.display = "none"; return; }
+      wrap.className = "best-showcase reveal";
+      wrap.innerHTML =
+        list.map((p, i) =>
+          `<a class="best-slide${i === 0 ? " is-active" : ""}" href="product.html?id=${encodeURIComponent(p.id)}" aria-label="${esc(p.name)}">`
+          + FE.imgHTML(p, 0, { w: 1200, h: 800, alt: p.name, eager: i === 0 })
+          + `</a>`).join("")
+        + `<div class="best-dots">`
+          + list.map((_, i) => `<button class="best-dot${i === 0 ? " is-active" : ""}" data-i="${i}" aria-label="Best seller ${i + 1}"></button>`).join("")
+        + `</div>`;
+      const slides = wrap.querySelectorAll(".best-slide");
+      const dots = wrap.querySelectorAll(".best-dot");
+      if (slides.length < 2) return;
+      let idx = 0, timer = null;
+      const go = (n) => {
+        slides[idx].classList.remove("is-active"); dots[idx].classList.remove("is-active");
+        idx = (n + slides.length) % slides.length;
+        slides[idx].classList.add("is-active"); dots[idx].classList.add("is-active");
+      };
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const start = () => { if (!reduce) timer = setInterval(() => go(idx + 1), 3800); };
+      dots.forEach((d) => d.addEventListener("click", (e) => {
+        e.preventDefault(); go(+d.getAttribute("data-i"));
+        if (timer) { clearInterval(timer); start(); }
+      }));
+      start();
+    })();
     // Trending
     UI.renderProducts(FE.$("#homeTrending"), all.filter(p => p.isTrending).slice(0, 8).length ? all.filter(p => p.isTrending).slice(0, 8) : all.slice(0, 8));
 
