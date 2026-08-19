@@ -452,6 +452,18 @@
         ? `${money(p.price)}<span class="was">${money(p.oldPrice)}</span>`
         : money(p.price);
       const href = "product.html?id=" + encodeURIComponent(p.id);
+      // Card image gallery — swipe sideways through all of the product's real
+      // photos (main + colour-variant images). Single image when there's only
+      // one (tap always opens the product).
+      const galleryImgs = [];
+      const pushReal = (u) => { if (u && /^https?:\/\//.test(u) && galleryImgs.indexOf(u) < 0) galleryImgs.push(u); };
+      (p.images || []).forEach(pushReal);
+      (p.colorImages || []).forEach(pushReal);
+      const media = galleryImgs.length > 1
+        ? `<div class="product-card__media pc-gallery" data-id="${p.id}">`
+          + galleryImgs.map((u) => `<a class="pc-gallery__item" href="${href}" aria-label="${esc(p.name)}"><img src="${esc(u)}" alt="${esc(p.name)}" loading="lazy" width="800" height="800"></a>`).join("")
+          + `</div>`
+        : `<a class="product-card__media" href="${href}" aria-label="${esc(p.name)}">${imgHTML(p, 0, { w: 800, h: 800 })}</a>`;
       // Dot-only colour swatches. Each carries its colour's own photo (or the
       // main photo when none is set) so picking a colour swaps the card image.
       const mainImg = productImage(p, 0);
@@ -465,9 +477,7 @@
           </div>`
         : "";
       return `<article class="product-card reveal${p.stock === "out" ? " is-out" : ""}" data-id="${p.id}">
-        <a class="product-card__media" href="${href}" aria-label="${esc(p.name)}">
-          ${imgHTML(p, 0, { w: 800, h: 800 })}
-        </a>
+        ${media}
         <div class="product-card__badges">${badges.join("")}</div>
         <button class="product-card__fav" aria-label="Add to wishlist" title="Wishlist">${I.heart}</button>
         <div class="product-card__body">
@@ -614,8 +624,18 @@
             ch.setAttribute("aria-pressed", on ? "true" : "false");
           });
           const card = cpick.closest(".product-card");
-          const media = card && card.querySelector(".product-card__media img");
-          if (media && vimg) { media.src = vimg; }
+          const gallery = card && card.querySelector(".pc-gallery");
+          if (gallery && vimg) {
+            // Multi-image card: scroll the gallery to this colour's photo.
+            const items = gallery.querySelectorAll(".pc-gallery__item");
+            for (let k = 0; k < items.length; k++) {
+              const im = items[k].querySelector("img");
+              if (im && im.getAttribute("src") === vimg) { gallery.scrollTo({ left: items[k].offsetLeft, behavior: "smooth" }); break; }
+            }
+          } else {
+            const media = card && card.querySelector(".product-card__media img");
+            if (media && vimg) { media.src = vimg; }
+          }
           if (Cart.qtyOf(cid) > 0) Cart.setColor(cid, color);
         }
         // Card quantity stepper (+/-) — adds/updates the cart in place,
