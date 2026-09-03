@@ -291,6 +291,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 /* Best-seller showcase — one big auto-rotating image card (pictures only) */
 .best-showcase { position: relative; width: 100%; aspect-ratio: 5 / 2; border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--shadow-md); background: var(--cream); }
 @media (max-width: 700px) { .best-showcase { aspect-ratio: 4 / 5; } }
+/* Best Sellers showcase is a mobile-only section — hidden on desktop. */
+@media (min-width: 901px) { .home-best { display: none; } }
 .best-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s var(--ease); will-change: opacity; }
 .best-slide.is-active { opacity: 1; }
 .best-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
