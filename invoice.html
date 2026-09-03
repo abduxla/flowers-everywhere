@@ -19,6 +19,9 @@
     .meta { text-align:right; font-size:.82rem; color:var(--muted); line-height:1.7; }
     .meta b { color:var(--ink); }
     h1.doc { font-family:'Cormorant Garamond',serif; font-weight:600; font-size:1.5rem; margin:0 0 18px; }
+    .cust { margin:0 0 22px; line-height:1.6; }
+    .cust b { display:block; font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; font-weight:600; }
+    .cust span { font-size:.9rem; color:var(--ink); }
     table { width:100%; border-collapse:collapse; font-size:.9rem; }
     th { text-align:left; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line); padding:10px 8px; }
     td { padding:12px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
@@ -96,6 +99,7 @@
                 '<a href="https://wa.me/94705254433" style="color:inherit;text-decoration:none">+94 70 5254433</a></div></div>' +
           '</div>' +
           '<h1 class="doc">Order Invoice</h1>' +
+          (o.customer ? '<div class="cust"><b>Deliver to</b><span>' + esc(o.customer.name) + '<br>' + esc(o.customer.address).replace(/\n/g, "<br>") + '<br>' + esc(o.customer.phone) + '</span></div>' : '') +
           '<table><thead><tr><th>#</th><th>Product</th><th class="r">Qty</th><th class="r">Unit</th><th class="r">Amount</th></tr></thead>' +
             '<tbody>' + rows + '</tbody></table>' +
           '<div class="totals">' +

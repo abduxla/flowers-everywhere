@@ -311,11 +311,12 @@
     },
     // Snapshot the cart into a plain order object (exactly what the invoice
     // shows and what we store).
-    buildOrder(ref) {
+    buildOrder(ref, customer) {
       const lines = Cart.lines();
       return {
         ref: ref,
         date: new Date().toISOString(),
+        customer: customer || null,
         items: lines.map(l => {
           const p = l.product;
           // Thumbnail for the invoice — the chosen colour's photo if it has
@@ -336,6 +337,13 @@
       let msg = "🌸 Hello " + CONFIG.brand + "!\n\n";
       msg += "I'd like to place an order.\n\n";
       msg += "Order Reference: " + ref + "\n\n";
+      if (order.customer) {
+        msg += DIV + "\n\n";
+        msg += "Delivery Details\n\n";
+        msg += "Name:\n" + order.customer.name + "\n\n";
+        msg += "Address:\n" + order.customer.address + "\n\n";
+        msg += "Phone:\n" + order.customer.phone + "\n\n";
+      }
       msg += DIV + "\n\n";
       msg += "Order Summary\n";
       order.items.forEach((it, i) => {
@@ -387,14 +395,18 @@
     },
     checkout() {
       if (!Cart.count()) { UI.toast("Your cart is empty"); return; }
+      // Collect the customer's delivery details first (name/address/phone) so
+      // they land in the WhatsApp message + the printable invoice.
+      UI.openCheckout();
+    },
+    // Runs after the details form is submitted. `win` is a tab already opened
+    // inside the submit gesture (so the WhatsApp popup isn't blocked).
+    submitOrder(customer, win) {
+      if (!Cart.count()) { if (win) win.close(); UI.toast("Your cart is empty"); return; }
       const ref = this.nextOrderRef();
       Analytics.track("checkout");
-      const order = this.buildOrder(ref);
-      // Reserve the tab inside the click gesture so the popup isn't blocked,
-      // then redirect it once we have the short invoice link.
-      const win = window.open("", "_blank");
+      const order = this.buildOrder(ref, customer);
       const self = this;
-      // Don't let a slow/failed save hold the tab blank — fall back after 6s.
       const timeout = new Promise(function (res) { setTimeout(function () { res(null); }, 6000); });
       Promise.race([this.saveOrder(order), timeout]).then(function (shortUrl) {
         const link = shortUrl || self.invoiceUrlInline(order);
@@ -599,7 +611,7 @@
       const so = $("#searchOverlay"), si = $("#searchInput");
       $("#openSearch") && $("#openSearch").addEventListener("click", () => { so.classList.add("open"); setTimeout(() => si.focus(), 60); });
       $$("[data-close-search]").forEach(b => b.addEventListener("click", () => so.classList.remove("open")));
-      document.addEventListener("keydown", e => { if (e.key === "Escape") { so.classList.remove("open"); mnav.classList.remove("open"); this.closeCart(); } });
+      document.addEventListener("keydown", e => { if (e.key === "Escape") { so.classList.remove("open"); mnav.classList.remove("open"); this.closeCart(); this.closeCheckout(); } });
       si && si.addEventListener("input", () => this._runSearch(si.value));
 
       $("#openCart") && $("#openCart").addEventListener("click", () => this.openCart());
@@ -760,12 +772,48 @@
       const tw = document.createElement("div"); tw.className = "toast-wrap"; tw.id = "toastWrap";
       document.body.appendChild(tw);
 
+      // Checkout details modal — name / address / phone captured before the
+      // WhatsApp handoff, and written into the message + the printable invoice.
+      const saved = load("fe_customer_v1", {});
+      const co = document.createElement("div");
+      co.className = "checkout-modal"; co.id = "checkoutModal";
+      co.innerHTML = `
+        <div class="checkout-modal__scrim" data-close-checkout></div>
+        <div class="checkout-modal__card">
+          <div class="checkout-modal__head"><h3>Your delivery details</h3><button class="icon-btn" data-close-checkout aria-label="Close">${I.close}</button></div>
+          <p class="muted" style="font-size:.85rem;margin-bottom:16px">We'll add these to your order so we can arrange delivery. You'll confirm everything on WhatsApp — no online payment.</p>
+          <form id="checkoutForm" novalidate>
+            <label class="co-field"><span>Full name</span><input id="co_name" type="text" autocomplete="name" required value="${esc(saved.name || "")}"></label>
+            <label class="co-field"><span>Delivery address</span><textarea id="co_address" rows="3" autocomplete="street-address" required>${esc(saved.address || "")}</textarea></label>
+            <label class="co-field"><span>Phone number</span><input id="co_phone" type="tel" autocomplete="tel" required value="${esc(saved.phone || "")}"></label>
+            <button type="submit" class="btn btn--wa btn--block" style="margin-top:4px">${I.wa} Send order on WhatsApp</button>
+          </form>`;
+      document.body.appendChild(co);
+      $$("[data-close-checkout]").forEach(b => b.addEventListener("click", () => this.closeCheckout()));
+      const cform = $("#checkoutForm");
+      if (cform) cform.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const customer = {
+          name: $("#co_name").value.trim(),
+          address: $("#co_address").value.trim(),
+          phone: $("#co_phone").value.trim(),
+        };
+        if (!customer.name || !customer.address || !customer.phone) { this.toast("Please fill in name, address and phone"); return; }
+        save("fe_customer_v1", customer);
+        // Reserve the tab inside this gesture so the WhatsApp popup isn't blocked.
+        const win = window.open("", "_blank");
+        this.closeCheckout();
+        WhatsApp.submitOrder(customer, win);
+      });
+
       document.addEventListener("fe:cart", () => { this.updateCartCount(); this.renderCart(); this._syncAllQty(); });
       this.renderCart();
     },
 
     openCart() { $("#cartDrawer").classList.add("open"); this.renderCart(); },
     closeCart() { const d = $("#cartDrawer"); if (d) d.classList.remove("open"); },
+    openCheckout() { this.closeCart(); const m = $("#checkoutModal"); if (m) { m.classList.add("open"); const n = $("#co_name"); if (n) setTimeout(() => n.focus(), 80); } },
+    closeCheckout() { const m = $("#checkoutModal"); if (m) m.classList.remove("open"); },
     updateCartCount() {
       const el = $("#cartCount"); if (!el) return;
       const n = Cart.count(); el.textContent = n; el.classList.toggle("show", n > 0);
