@@ -236,7 +236,8 @@
       return `<div class="cvar-row">
         <span class="cvar-dot" style="background:${colorBg(c)}"></span>
         <span class="cvar-name">${esc(c)}</span>
-        <button type="button" class="cvar-photo" data-cphoto="${i}" title="Set the photo shown when a customer picks ${esc(c)}">${thumb}</button>
+        <button type="button" class="cvar-photo" data-cphoto="${i}" title="Upload a photo for ${esc(c)}">${thumb}</button>
+        <button type="button" class="cvar-link" data-clink="${i}" title="Paste an image URL for ${esc(c)}">🔗<small>Link</small></button>
         <button type="button" class="cvar-del" data-crm="${i}" aria-label="Remove ${esc(c)}">×</button>
       </div>`;
     }).join("");
@@ -245,6 +246,21 @@
       activeColorIdx = +b.getAttribute("data-cphoto");
       $("#colorPhotoInput").click();
     });
+    box.querySelectorAll("[data-clink]").forEach((b) => b.onclick = () => setColorImageLink(+b.getAttribute("data-clink")));
+  }
+  // Paste an image URL for a colour (instead of uploading a photo).
+  function setColorImageLink(idx) {
+    const cur = formColorImages[idx] || "";
+    const u = (window.prompt("Paste the image URL for this colour:", cur) || "").trim();
+    if (!u) return;
+    // Replacing a photo we uploaded this session → free it on the host.
+    const prev = formColorImages[idx];
+    if (prev && sessionUploads.includes(prev)) {
+      deleteUploadedImage(prev);
+      sessionUploads = sessionUploads.filter((x) => x !== prev);
+    }
+    formColorImages[idx] = u;
+    renderFormColors();
   }
   function addFormColor() {
     const inp = $("#f_coloradd"); const v = (inp.value || "").trim();
