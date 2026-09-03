@@ -31,9 +31,6 @@
     Analytics.track("view", pr.id);
     injectSchema(pr);
 
-    const gallery = productGallery(pr);
-    let active = 0, qty = 1;
-
     // Breadcrumb
     FE.$("#breadcrumb").innerHTML =
       `<a href="index.html">Home</a><span class="sep">/</span>
@@ -41,12 +38,44 @@
        <a href="shop.html?category=${pr.category}">${esc(Store.categoryName(pr.category))}</a><span class="sep">/</span>
        <span>${esc(pr.name)}</span>`;
 
-    // Gallery
+    // Gallery = every real photo the product has (main + one per colour), so
+    // each colour's image appears as a thumbnail beside the main image.
+    const hasColors = Array.isArray(pr.colors) && pr.colors.length;
+    let selColor = hasColors ? pr.colors[0] : "";
+    let qty = 1;
+    const galleryUrls = [];
+    const pushReal = (u) => { if (u && /^https?:\/\//.test(u) && galleryUrls.indexOf(u) < 0) galleryUrls.push(u); };
+    (pr.images || []).forEach(pushReal);
+    (pr.colorImages || []).forEach(pushReal);
+    if (!galleryUrls.length) galleryUrls.push(FE.productImage(pr, 0));
+    // Keep colours and gallery positions in sync both ways.
+    const idxToColor = {}, colorToIdx = {};
+    if (hasColors) pr.colors.forEach((c, i) => {
+      const u = (pr.colorImages && pr.colorImages[i]) || "";
+      const gi = galleryUrls.indexOf(u);
+      if (gi >= 0) { idxToColor[gi] = c; if (!(c in colorToIdx)) colorToIdx[c] = gi; }
+    });
+    let active = (hasColors && (selColor in colorToIdx)) ? colorToIdx[selColor] : 0;
+
     const main = FE.$("#pdpMain"), thumbs = FE.$("#pdpThumbs");
     function paint() {
-      main.innerHTML = FE.imgHTML(pr, active, { w: 800, h: 1000, eager: true });
-      thumbs.innerHTML = gallery.map((g, i) => `<button class="pdp-thumb${i === active ? " active" : ""}" data-i="${i}" aria-label="View image ${i+1}">${FE.imgHTML(pr, i, { alt: pr.name + " view " + (i+1) })}</button>`).join("");
-      thumbs.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { active = +b.getAttribute("data-i"); paint(); });
+      main.innerHTML = '<img src="' + esc(galleryUrls[active]) + '" alt="' + esc(pr.name) + '" width="800" height="1000" fetchpriority="high">';
+      thumbs.innerHTML = galleryUrls.map((u, i) => `<button class="pdp-thumb${i === active ? " active" : ""}" data-i="${i}" aria-label="View image ${i + 1}"><img src="${esc(u)}" alt="${esc(pr.name)} view ${i + 1}" loading="lazy"></button>`).join("");
+      thumbs.querySelectorAll("[data-i]").forEach((b) => b.onclick = () => selectImage(+b.getAttribute("data-i")));
+    }
+    function setColor(color, scrollGallery) {
+      selColor = color;
+      FE.$$("#pdpInfo .color-swatch").forEach((ch) => {
+        const on = ch.getAttribute("data-color") === color;
+        ch.classList.toggle("is-selected", on);
+        ch.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      const nm = FE.$("#pdpColorName"); if (nm) nm.textContent = color;
+      if (scrollGallery && (color in colorToIdx)) { active = colorToIdx[color]; paint(); }
+    }
+    function selectImage(i) {
+      active = i; paint();
+      if (idxToColor[i]) setColor(idxToColor[i], false);  // clicking a colour's thumb selects that colour
     }
     paint();
     main.onclick = () => main.classList.toggle("zoomed");
@@ -58,10 +87,7 @@
     if (pr.isTrending) badges.push('<span class="badge badge--trend">Trending</span>');
     const price = pr.oldPrice ? `${money(pr.price)}<span class="was">${money(pr.oldPrice)}</span>` : money(pr.price);
 
-    // Colour options (variants). Selecting a chip updates `selColor`, which
-    // rides into the cart line and the WhatsApp order.
-    const hasColors = Array.isArray(pr.colors) && pr.colors.length;
-    let selColor = hasColors ? pr.colors[0] : "";
+    // Colour options (variants) — selection rides into the cart & WhatsApp order.
     const pdpMainImg = FE.productImage(pr, 0);
     const colorRow = hasColors ? `
       <div class="pdp-colors" data-color-group="pdp">
@@ -109,18 +135,8 @@
         <div class="accordion__item"><button class="accordion__head">Delivery & Ordering <span class="pm">+</span></button><div class="accordion__body"><p>Add to cart and checkout via WhatsApp — we'll confirm delivery or pickup and timing directly in chat. Free island-wide delivery on orders over ${money(FE.CONFIG.freeShipThreshold)}.</p></div></div>
       </div>`;
 
-    // Colour swatches → update selection, label, and swap the main photo.
-    FE.$$("#pdpInfo [data-color-pick]").forEach((b) => b.onclick = () => {
-      selColor = b.getAttribute("data-color");
-      const vimg = b.getAttribute("data-img");
-      FE.$$("#pdpInfo .color-swatch").forEach((ch) => {
-        const on = ch === b;
-        ch.classList.toggle("is-selected", on);
-        ch.setAttribute("aria-pressed", on ? "true" : "false");
-      });
-      const nm = FE.$("#pdpColorName"); if (nm) nm.textContent = selColor;
-      const m = FE.$("#pdpMain img"); if (m && vimg) { m.src = vimg; }
-    });
+    // Colour swatches → select the colour and show its photo in the gallery.
+    FE.$$("#pdpInfo [data-color-pick]").forEach((b) => b.onclick = () => setColor(b.getAttribute("data-color"), true));
 
     const qVal = FE.$("#qVal");
     FE.$("#qPlus").onclick = () => { qty++; qVal.textContent = qty; };
