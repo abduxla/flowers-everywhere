@@ -12,12 +12,10 @@
 
   // Product images are hosted on cPanel (100 GB/mo bandwidth) instead of
   // Supabase Storage (5 GB) — see img.flowerseverywhere.lk/upload.php.
-  // The database + auth still live in Supabase. The token below is shared
-  // with the PHP endpoint (it also ships in this client file — the endpoint
-  // additionally validates real image bytes + size, so the worst a leaked
-  // token allows is uploading images, never running code).
+  // The database + auth live in Supabase. upload.php authorises the caller by
+  // verifying their Supabase session token server-side (admin allowlist), so
+  // no upload/delete secret is present in this client bundle.
   const UPLOAD_URL = "https://img.flowerseverywhere.lk/upload.php";
-  const UPLOAD_TOKEN = "Flowerseverywhere12345678!";
 
   if (!SB || !H) {
     alert("Store backend failed to load. Check your connection and refresh.");
@@ -386,6 +384,17 @@
       reader.readAsDataURL(file);
     });
   }
+  // The cPanel endpoint authorises the CURRENT admin's Supabase session
+  // (server-side verification) instead of a shared secret — so nothing that
+  // grants upload/delete rights ever ships in the client bundle.
+  async function authHeader() {
+    try {
+      const { data } = await SB.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+      return t ? { Authorization: "Bearer " + t } : {};
+    } catch (e) { return {}; }
+  }
+
   // Upload one compressed image to the cPanel endpoint; returns its public
   // URL (https://img.flowerseverywhere.lk/uploads/xxx.jpg).
   async function uploadImage(blob) {
@@ -393,7 +402,7 @@
     fd.append("file", blob, "photo.jpg");
     const res = await fetch(UPLOAD_URL, {
       method: "POST",
-      headers: { "X-Auth-Token": UPLOAD_TOKEN },
+      headers: await authHeader(),
       body: fd,
     });
     const j = await res.json().catch(() => ({}));
@@ -404,12 +413,12 @@
   }
 
   // Best-effort delete of a cPanel-hosted image (skips old Supabase URLs).
-  function deleteUploadedImage(url) {
+  async function deleteUploadedImage(url) {
     if (!url || url.indexOf("img.flowerseverywhere.lk") < 0) return;
     const fd = new FormData();
     fd.append("action", "delete");
     fd.append("file", url.split("/").pop());
-    fetch(UPLOAD_URL, { method: "POST", headers: { "X-Auth-Token": UPLOAD_TOKEN }, body: fd }).catch(() => {});
+    fetch(UPLOAD_URL, { method: "POST", headers: await authHeader(), body: fd }).catch(() => {});
   }
   async function handleFiles(files) {
     // One photo per product: take the first image and replace any existing.
