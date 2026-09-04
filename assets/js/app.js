@@ -250,29 +250,35 @@
     items: load(CONFIG.keys.cart, []),
     _persist() { save(CONFIG.keys.cart, this.items); document.dispatchEvent(new CustomEvent("fe:cart")); },
     count() { return this.items.reduce((s, i) => s + i.qty, 0); },
-    qtyOf(id) { const l = this.items.find(i => i.id === id); return l ? l.qty : 0; },
+    // Each id + colour is its own line, so different colours of the same
+    // product stay separate. qtyOf(id) = total for the product across colours;
+    // qtyOf(id, colour) = just that colour.
+    qtyOf(id, color) {
+      return this.items
+        .filter(i => i.id === id && (color === undefined || (i.color || "") === (color || "")))
+        .reduce((s, i) => s + i.qty, 0);
+    },
     add(id, qty, color) {
-      qty = qty || 1;
-      const line = this.items.find(i => i.id === id);
-      if (line) { line.qty += qty; if (color) line.color = color; }
-      else this.items.push({ id, qty, color: color || "" });
+      qty = qty || 1; color = color || "";
+      const line = this.items.find(i => i.id === id && (i.color || "") === color);
+      if (line) line.qty += qty;
+      else this.items.push({ id, qty, color });
       this._persist();
       Analytics.track("add_to_cart", id);
     },
-    setQty(id, qty) {
-      const line = this.items.find(i => i.id === id);
+    setQty(id, qty, color) {
+      color = color || "";
+      const line = this.items.find(i => i.id === id && (i.color || "") === color);
       if (!line) return;
       line.qty = qty;
-      if (line.qty <= 0) this.remove(id); else this._persist();
+      if (line.qty <= 0) this.remove(id, color); else this._persist();
     },
-    // Update the chosen colour for a line already in the cart.
-    setColor(id, color) {
-      const line = this.items.find(i => i.id === id);
-      if (!line) return;
-      line.color = color || "";
+    remove(id, color) {
+      this.items = (color === undefined)
+        ? this.items.filter(i => i.id !== id)
+        : this.items.filter(i => !(i.id === id && (i.color || "") === (color || "")));
       this._persist();
     },
-    remove(id) { this.items = this.items.filter(i => i.id !== id); this._persist(); },
     clear() { this.items = []; this._persist(); },
     lines() {
       return this.items.map(i => {
@@ -620,14 +626,11 @@
       document.addEventListener("click", (e) => {
         const add = e.target.closest("[data-add]");
         if (add) { e.preventDefault(); Cart.add(add.getAttribute("data-add"), 1); this.toast("Added to cart", true); this.openCart(); }
-        // Colour swatch on a card — select it, swap the card photo to that
-        // colour's image, and if the item is already in the cart update its
-        // colour immediately.
+        // Colour swatch on a card — select it (drives what the +/- add) and
+        // swap the card photo to that colour's image.
         const cpick = e.target.closest("[data-color-pick]");
         if (cpick) {
           e.preventDefault();
-          const cid = cpick.getAttribute("data-color-pick");
-          const color = cpick.getAttribute("data-color");
           const vimg = cpick.getAttribute("data-img");
           const group = cpick.closest("[data-color-group]");
           if (group) group.querySelectorAll(".color-swatch").forEach((ch) => {
@@ -648,16 +651,15 @@
             const media = card && card.querySelector(".product-card__media img");
             if (media && vimg) { media.src = vimg; }
           }
-          if (Cart.qtyOf(cid) > 0) Cart.setColor(cid, color);
         }
-        // Card quantity stepper (+/-) — adds/updates the cart in place,
-        // carrying the card's currently-selected colour (if any).
+        // Card quantity stepper (+/-) — adds/removes the cart line for the
+        // card's currently-selected colour, so each colour is tracked apart.
         const inc = e.target.closest("[data-qty-inc]");
         if (inc) {
           e.preventDefault();
           const id = inc.getAttribute("data-qty-inc");
           const card = inc.closest(".product-card");
-          const sel = card && card.querySelector(".color-chip.is-selected");
+          const sel = card && card.querySelector(".color-swatch.is-selected");
           Cart.add(id, 1, sel ? sel.getAttribute("data-color") : "");
           this._syncQty(id);
         }
@@ -665,7 +667,10 @@
         if (dec) {
           e.preventDefault();
           const id = dec.getAttribute("data-qty-dec");
-          Cart.setQty(id, Cart.qtyOf(id) - 1);
+          const card = dec.closest(".product-card");
+          const sel = card && card.querySelector(".color-swatch.is-selected");
+          const color = sel ? sel.getAttribute("data-color") : "";
+          Cart.setQty(id, Cart.qtyOf(id, color) - 1, color);
           this._syncQty(id);
         }
         const fav = e.target.closest(".product-card__fav");
@@ -826,23 +831,34 @@
         body.innerHTML = `<div class="cart-empty">${I.bag}<p>Your cart is empty</p><a class="btn btn--ghost btn--sm" href="shop.html" style="margin-top:14px">Start shopping</a></div>`;
         foot.innerHTML = ""; return;
       }
-      body.innerHTML = lines.map(l => `
+      body.innerHTML = lines.map(l => {
+        // Show the chosen colour's photo in the cart line when it has one.
+        let cimg = "";
+        if (l.color && Array.isArray(l.product.colors) && Array.isArray(l.product.colorImages)) {
+          const ci = l.product.colors.findIndex(c => String(c).toLowerCase() === l.color.toLowerCase());
+          if (ci >= 0 && l.product.colorImages[ci]) cimg = l.product.colorImages[ci];
+        }
+        const thumb = cimg
+          ? `<img src="${esc(cimg)}" alt="${esc(l.product.name)}">`
+          : imgHTML(l.product, 0, { alt: l.product.name });
+        return `
         <div class="cart-line" data-id="${l.product.id}">
-          ${imgHTML(l.product, 0, { alt: l.product.name })}
+          ${thumb}
           <div class="cart-line__info">
             <div class="cart-line__name">${esc(l.product.name)}</div>
             ${l.color ? `<div class="cart-line__variant">${colorDot(l.color)}Colour: ${esc(l.color)}</div>` : ""}
             <div class="cart-line__price">${money(l.product.price)}</div>
             <div class="cart-line__row">
               <div class="qty">
-                <button data-dec="${l.product.id}" aria-label="Decrease">−</button>
+                <button data-dec="${l.product.id}" data-color="${esc(l.color)}" aria-label="Decrease">−</button>
                 <span>${l.qty}</span>
-                <button data-inc="${l.product.id}" aria-label="Increase">+</button>
+                <button data-inc="${l.product.id}" data-color="${esc(l.color)}" aria-label="Increase">+</button>
               </div>
-              <button class="cart-line__remove" data-remove="${l.product.id}">Remove</button>
+              <button class="cart-line__remove" data-remove="${l.product.id}" data-color="${esc(l.color)}">Remove</button>
             </div>
           </div>
-        </div>`).join("");
+        </div>`;
+      }).join("");
       const sub = Cart.subtotal();
       foot.innerHTML = `
         <div class="summary-row"><span>Subtotal</span><span>${money(sub)}</span></div>
@@ -851,9 +867,9 @@
         <button class="btn btn--wa btn--block" id="waCheckout" style="margin-top:14px">${I.wa} Checkout on WhatsApp</button>
         <a class="btn btn--ghost btn--block" href="shop.html" style="margin-top:10px">Continue Shopping</a>
         <p class="search-hint" style="text-align:center;margin-top:12px">No online payment — you'll confirm your order in a WhatsApp chat.</p>`;
-      body.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { const id=b.getAttribute("data-inc"); const l=Cart.items.find(i=>i.id===id); Cart.setQty(id, l.qty+1); });
-      body.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { const id=b.getAttribute("data-dec"); const l=Cart.items.find(i=>i.id===id); Cart.setQty(id, l.qty-1); });
-      body.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => Cart.remove(b.getAttribute("data-remove")));
+      body.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => Cart.add(b.getAttribute("data-inc"), 1, b.getAttribute("data-color")));
+      body.querySelectorAll("[data-dec]").forEach(b => { const id=b.getAttribute("data-dec"), color=b.getAttribute("data-color"); b.onclick = () => Cart.setQty(id, Cart.qtyOf(id, color) - 1, color); });
+      body.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => Cart.remove(b.getAttribute("data-remove"), b.getAttribute("data-color")));
       foot.querySelector("#waCheckout").onclick = () => WhatsApp.checkout();
     },
 
