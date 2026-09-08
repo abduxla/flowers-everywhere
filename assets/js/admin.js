@@ -421,20 +421,18 @@
     fetch(UPLOAD_URL, { method: "POST", headers: await authHeader(), body: fd }).catch(() => {});
   }
   async function handleFiles(files) {
-    // One photo per product: take the first image and replace any existing.
-    const f = Array.from(files).find((x) => x.type.startsWith("image/"));
-    if (f) {
+    // Add every dropped/selected image to the product's gallery. Products
+    // without colour variants (artificial leaves, single-colour stems…)
+    // can carry several photos — each is uploaded and APPENDED, nothing is
+    // replaced. Remove any you don't want from the previews below.
+    const imgs = Array.from(files).filter((x) => x.type.startsWith("image/"));
+    if (!imgs.length) return;
+    for (const f of imgs) {
       try {
         toast("Uploading image…");
         const blob = await compressToBlob(f);
         const url = await uploadImage(blob);
-        // Replacing a photo we uploaded earlier this session → delete the old one.
-        const prev = formImages[0];
-        if (prev && sessionUploads.includes(prev)) {
-          deleteUploadedImage(prev);
-          sessionUploads = sessionUploads.filter((u) => u !== prev);
-        }
-        formImages = [url];
+        formImages.push(url);
         sessionUploads.push(url);
         renderFormImages();
       } catch (err) { toast("Image upload failed: " + (err.message || err)); }
@@ -633,12 +631,9 @@
 
     $("#addImgUrl").onclick = () => {
       const u = $("#imgUrl").value.trim(); if (!u) return;
-      const prev = formImages[0];
-      if (prev && sessionUploads.includes(prev)) {
-        deleteUploadedImage(prev);
-        sessionUploads = sessionUploads.filter((x) => x !== prev);
-      }
-      formImages = [u]; $("#imgUrl").value = ""; renderFormImages();
+      // Append the pasted link to the gallery (skip if already added).
+      if (!formImages.includes(u)) formImages.push(u);
+      $("#imgUrl").value = ""; renderFormImages();
     };
     const dz = $("#dropzone"), fi = $("#fileInput");
     dz.onclick = () => fi.click();
