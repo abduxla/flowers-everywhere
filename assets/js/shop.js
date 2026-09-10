@@ -2,13 +2,18 @@
 (function () {
   const { Store, UI, esc, money } = window.FE;
 
-  const state = { categories: new Set(), colors: new Set(), min: null, max: null, availOnly: false, sort: "featured", q: "", quick: null };
+  // `view` is a layout choice, not an ordering one: "grid" is the normal
+  // multi-column catalogue, "large" lists one product per row with a big
+  // photo so shoppers can browse without opening each product. It rides in
+  // the sort dropdown because that's where shoppers look for it.
+  const state = { categories: new Set(), colors: new Set(), min: null, max: null, availOnly: false, sort: "featured", view: "grid", q: "", quick: null };
 
   function readParams() {
     const p = new URLSearchParams(location.search);
     if (p.get("category")) state.categories.add(p.get("category"));
     if (p.get("q")) state.q = p.get("q").toLowerCase();
     if (p.get("filter")) state.quick = p.get("filter"); // new | best | trend
+    if (p.get("view") === "large") state.view = "large"; // shareable link
   }
 
   function match(pr) {
@@ -92,6 +97,7 @@
   let shown = 0;
   function renderPage(reset) {
     const grid = FE.$("#shopGrid");
+    grid.classList.toggle("product-grid--list", state.view === "large");
     if (reset) {
       filteredNow = sortList(Store.getProducts().filter(match));
       shown = 0;
@@ -130,7 +136,15 @@
 
     renderFilters();
 
-    FE.$("#sortSelect").onchange = (e) => { state.sort = e.target.value; render(); };
+    // "large" switches layout and leaves the current ordering alone; any
+    // other choice sorts and returns to the normal grid.
+    FE.$("#sortSelect").value = state.view === "large" ? "large" : state.sort;
+    FE.$("#sortSelect").onchange = (e) => {
+      const v = e.target.value;
+      if (v === "large") state.view = "large";
+      else { state.view = "grid"; state.sort = v; }
+      render();
+    };
     FE.$("#priceMin").oninput = (e) => { state.min = e.target.value ? +e.target.value : null; render(); };
     FE.$("#priceMax").oninput = (e) => { state.max = e.target.value ? +e.target.value : null; render(); };
     FE.$("#availToggle").onchange = (e) => { state.availOnly = e.target.checked; render(); };
