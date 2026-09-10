@@ -517,9 +517,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .breadcrumb a:hover { color: var(--accent-deep); }
 .breadcrumb .sep { opacity: 0.5; }
 .pdp { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(30px, 5vw, 64px); align-items: start; }
-.pdp-gallery { display: grid; grid-template-columns: 76px 1fr; gap: 16px; position: sticky; top: calc(var(--header-h) + 20px); }
-.pdp-thumbs { display: flex; flex-direction: column; gap: 10px; }
-.pdp-thumb { width: 76px; height: 90px; border-radius: var(--r-sm); overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: border-color var(--dur) var(--ease); background: var(--cream); }
+.pdp-gallery { display: grid; grid-template-columns: 1fr; gap: 14px; position: sticky; top: calc(var(--header-h) + 20px); }
+/* Thumbnails sit in a horizontal, swipeable strip under the main image
+   (the main image is first in the DOM). One tidy scrolling row instead of
+   a tall vertical rail, however many colour variants a product has. */
+.pdp-thumbs { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: thin; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.pdp-thumbs::-webkit-scrollbar { height: 6px; }
+.pdp-thumbs::-webkit-scrollbar-track { background: transparent; }
+.pdp-thumbs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.pdp-thumb { flex: 0 0 auto; width: 64px; height: 76px; border-radius: var(--r-sm); overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: border-color var(--dur) var(--ease); background: var(--cream); scroll-snap-align: start; }
 .pdp-thumb.active { border-color: var(--charcoal); }
 .pdp-thumb img, .pdp-thumb svg { width: 100%; height: 100%; object-fit: cover; }
 .pdp-main { position: relative; border-radius: var(--r-lg); overflow: hidden; aspect-ratio: 4/5; background: var(--cream); cursor: zoom-in; }
