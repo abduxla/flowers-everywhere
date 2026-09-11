@@ -305,25 +305,21 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .best-dot.is-active { background: #fff; transform: scale(1.3); }
 
 /* ---- Large-image (list) view ----
-   One product per row so shoppers can scroll and judge the photos without
-   opening each product. Reuses the normal product-card markup — just
-   re-laid-out to image-left / details-right. The doubled class keeps this
-   winning over the responsive `.product-grid` column rules further down. */
-/* minmax(0,1fr) — a plain 1fr floors at min-content, which let the details
-   column push the row wider than the screen. */
-.product-grid.product-grid--list { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-.product-grid--list .product-card { flex-direction: row; align-items: stretch; min-width: 0; }
-/* align-self stops the flex row stretching the media and breaking its 1/1 ratio */
-.product-grid--list .product-card__media { flex: 0 0 50%; align-self: flex-start; }
-.product-grid--list .product-card__body { flex: 1 1 auto; min-width: 0; justify-content: center; padding: 16px 18px; }
+   Fewer, bigger cards rather than a side-by-side row. The card keeps its
+   normal vertical shape (photo on top, details beneath), so the photo is as
+   wide as the whole card and nothing is cropped or left as dead space.
+   An image-left/details-right row read well until a product had a long name
+   or two rows of colour swatches: the details column then set the row height
+   and left a large blank area under the square photo. Multi-image products
+   also keep their swipeable in-card carousel here, which is exactly what you
+   want when browsing by photo. The doubled class keeps this winning over the
+   responsive `.product-grid` column rules further down. */
+.product-grid.product-grid--list { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .product-grid--list .product-card__name { font-size: 1.06rem; }
-/* the vertical card pushes price to the bottom with margin-top:auto —
-   in a row that just leaves a big gap, so group the details together */
-.product-grid--list .product-card__price { margin-top: 6px; }
 @media (min-width: 901px) {
-  /* On desktop the row is full-width, so a third of it is already a much
-     larger photo than the 4-up grid. */
-  .product-grid--list .product-card__media { flex-basis: 34%; }
+  /* Two-up on desktop — still about double the 4-up grid's photo without
+     becoming absurd on a wide monitor. */
+  .product-grid.product-grid--list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 }
 
 /* Horizontal swipe rail — product cards scroll sideways (tap still opens a card) */
