@@ -2,10 +2,12 @@
 (function () {
   const { Store, UI, esc, money } = window.FE;
 
-  // `view` is a layout choice, not an ordering one: "grid" is the normal
-  // multi-column catalogue, "large" lists one product per row with a big
-  // photo so shoppers can browse without opening each product. It rides in
-  // the sort dropdown because that's where shoppers look for it.
+  // `view` is a layout choice and `sort` is an ordering one, so they are
+  // separate controls: a sort no longer knocks the layout back to grid.
+  //   grid  — the normal multi-column catalogue
+  //   large — one (mobile) or two (desktop) big cards per row, browse by photo
+  //   list  — one product per row, thumbnail left and details right, to scan
+  //           a long catalogue by name and price
   const state = { categories: new Set(), colors: new Set(), min: null, max: null, availOnly: false, sort: "featured", view: "grid", q: "", quick: null };
 
   function readParams() {
@@ -13,7 +15,8 @@
     if (p.get("category")) state.categories.add(p.get("category"));
     if (p.get("q")) state.q = p.get("q").toLowerCase();
     if (p.get("filter")) state.quick = p.get("filter"); // new | best | trend
-    if (p.get("view") === "large") state.view = "large"; // shareable link
+    const v = p.get("view"); // shareable link
+    if (v === "large" || v === "list") state.view = v;
   }
 
   function match(pr) {
@@ -55,7 +58,7 @@
     }).join("");
     const colBox = FE.$("#filterColors");
     const swatchMap = { Blush:"#E7CFC6", White:"#F7F3EE", Ivory:"#EFE7DA", Sage:"#A9B7A5", Lavender:"#BEACD9", Gold:"#C9A24B", Terracotta:"#C0764F", "Dusty Pink":"#D3A0A0", Burgundy:"#7d2b3a", Champagne:"#E4D2A8" };
-    colBox.innerHTML = (window.FE_DATA.colors).map(c =>
+    colBox.innerHTML = ((window.FE_DATA && window.FE_DATA.colors) || []).map(c =>
       `<label class="filter-opt"><input type="checkbox" value="${esc(c)}" data-color ${state.colors.has(c) ? "checked" : ""}> <span class="swatch" style="background:${swatchMap[c]||'#ccc'}"></span> ${esc(c)}</label>`
     ).join("");
 
@@ -97,7 +100,8 @@
   let shown = 0;
   function renderPage(reset) {
     const grid = FE.$("#shopGrid");
-    grid.classList.toggle("product-grid--list", state.view === "large");
+    grid.classList.toggle("product-grid--large", state.view === "large");
+    grid.classList.toggle("product-grid--list", state.view === "list");
     if (reset) {
       filteredNow = sortList(Store.getProducts().filter(match));
       shown = 0;
@@ -136,15 +140,30 @@
 
     renderFilters();
 
-    // "large" switches layout and leaves the current ordering alone; any
-    // other choice sorts and returns to the normal grid.
-    FE.$("#sortSelect").value = state.view === "large" ? "large" : state.sort;
-    FE.$("#sortSelect").onchange = (e) => {
-      const v = e.target.value;
-      if (v === "large") state.view = "large";
-      else { state.view = "grid"; state.sort = v; }
-      render();
-    };
+    FE.$("#sortSelect").value = state.sort;
+    FE.$("#sortSelect").onchange = (e) => { state.sort = e.target.value; render(); };
+
+    // Layout switch, independent of the sort above.
+    const viewBtns = FE.$$("#viewToggle .view-btn");
+    const syncView = () => viewBtns.forEach((b) => {
+      const on = b.getAttribute("data-view") === state.view;
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    viewBtns.forEach((b) => {
+      b.onclick = () => {
+        const v = b.getAttribute("data-view");
+        if (v === state.view) return;
+        state.view = v;
+        syncView();
+        // keep ?view= in step so the layout survives a refresh or a shared link
+        const url = new URL(location.href);
+        if (v === "grid") url.searchParams.delete("view"); else url.searchParams.set("view", v);
+        history.replaceState(null, "", url);
+        render();
+      };
+    });
+    syncView();
     FE.$("#priceMin").oninput = (e) => { state.min = e.target.value ? +e.target.value : null; render(); };
     FE.$("#priceMax").oninput = (e) => { state.max = e.target.value ? +e.target.value : null; render(); };
     FE.$("#availToggle").onchange = (e) => { state.availOnly = e.target.checked; render(); };

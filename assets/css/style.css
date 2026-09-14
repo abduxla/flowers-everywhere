@@ -304,22 +304,54 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .best-dot { width: 8px; height: 8px; padding: 0; border: none; border-radius: 999px; background: rgba(255,255,255,0.55); cursor: pointer; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); }
 .best-dot.is-active { background: #fff; transform: scale(1.3); }
 
-/* ---- Large-image (list) view ----
+/* ---- Large-image view ----
    Fewer, bigger cards rather than a side-by-side row. The card keeps its
    normal vertical shape (photo on top, details beneath), so the photo is as
-   wide as the whole card and nothing is cropped or left as dead space.
-   An image-left/details-right row read well until a product had a long name
-   or two rows of colour swatches: the details column then set the row height
-   and left a large blank area under the square photo. Multi-image products
-   also keep their swipeable in-card carousel here, which is exactly what you
-   want when browsing by photo. The doubled class keeps this winning over the
-   responsive `.product-grid` column rules further down. */
-.product-grid.product-grid--list { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.product-grid--list .product-card__name { font-size: 1.06rem; }
+   wide as the whole card and nothing is cropped. Multi-image products keep
+   their swipeable in-card carousel here, which is exactly what you want when
+   browsing by photo. The doubled class keeps this winning over the responsive
+   `.product-grid` column rules further down. */
+.product-grid.product-grid--large { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.product-grid--large .product-card__name { font-size: 1.06rem; }
 @media (min-width: 901px) {
   /* Two-up on desktop — still about double the 4-up grid's photo without
      becoming absurd on a wide monitor. */
-  .product-grid.product-grid--list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .product-grid.product-grid--large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+}
+
+/* ---- List view ----
+   One product per row: thumbnail left, details right, so a long catalogue can
+   be scanned quickly by name and price rather than by photo.
+
+   The earlier attempt at this laid out a half-width square photo beside the
+   details, which left a large blank area under the photo whenever the details
+   column was shorter. Two things make that impossible here: the thumbnail is a
+   narrow fixed-width column (so the details are always the taller side), and
+   it is `align-self: stretch` with `aspect-ratio: auto`, so it takes exactly
+   the row's height however tall the row ends up. object-fit keeps the photo
+   filling that box at any height. */
+.product-grid.product-grid--list { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.product-grid--list .product-card { flex-direction: row; align-items: stretch; min-width: 0; min-height: 132px; }
+.product-grid--list .product-card__media {
+  flex: 0 0 clamp(104px, 30vw, 144px);
+  align-self: stretch;
+  aspect-ratio: auto;          /* the row height governs, not a 1/1 box */
+  height: auto;
+}
+.product-grid--list .product-card__body { flex: 1 1 auto; min-width: 0; justify-content: center; gap: 4px; padding: 12px 14px; }
+/* the vertical card pushes price down with margin-top:auto — in a centred
+   row that just reopens a gap, so keep the details grouped together */
+.product-grid--list .product-card__price { margin-top: 4px; padding-top: 0; }
+/* two lines keeps rows an even height however long the product name is */
+.product-grid--list .product-card__name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.product-grid--list .color-picker { margin-top: 6px; }
+.product-grid--list .qty-stepper { align-self: flex-start; width: min(190px, 100%); margin-top: 10px; }
+/* the wishlist heart would otherwise sit over the details text */
+.product-grid--list .product-card__fav { top: 10px; right: 10px; }
+@media (min-width: 901px) {
+  .product-grid--list .product-card { min-height: 168px; }
+  .product-grid--list .product-card__media { flex-basis: 176px; }
+  .product-grid--list .product-card__body { padding: 16px 20px; }
 }
 
 /* Horizontal swipe rail — product cards scroll sideways (tap still opens a card) */
@@ -517,6 +549,17 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .swatch { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: inline-block; }
 .shop-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 .shop-toolbar .count { color: var(--muted); font-size: 0.88rem; }
+/* Sort and layout sit together on the right of the toolbar and wrap as a
+   pair on narrow screens. */
+.toolbar-tools { display: flex; align-items: center; gap: 10px; }
+/* Segmented layout switch — grid / large / list. Icon-only: the control is
+   small, and each icon draws the layout it selects. */
+.view-toggle { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); flex: none; }
+.view-btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+.view-btn svg { width: 17px; height: 17px; }
+.view-btn:hover { color: var(--ink); background: var(--cream); }
+.view-btn.is-on { background: var(--charcoal); color: var(--ivory); }
+.view-btn.is-on:hover { background: var(--ink); }
 .select-wrap { position: relative; }
 .select-wrap select { appearance: none; padding: 11px 40px 11px 18px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); font-size: 0.86rem; cursor: pointer; }
 .select-wrap::after { content: "▾"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); font-size: 0.7rem; }

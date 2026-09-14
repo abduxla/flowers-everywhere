@@ -62,17 +62,31 @@
         <div class="shop-toolbar">
           <button class="btn btn--ghost btn--sm filter-toggle-mobile" id="filterToggle">Filters</button>
           <span class="count" id="shopCount">Loading…</span>
-          <div class="select-wrap">
-            <select id="sortSelect" aria-label="Sort products">
-              <option value="featured">Sort: Featured</option>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="best">Best Sellers</option>
-              <option value="az">Alphabetical (A–Z)</option>
-              <option value="large">View: Large images</option>
-            </select>
+          <div class="toolbar-tools">
+            <div class="select-wrap">
+              <select id="sortSelect" aria-label="Sort products">
+                <option value="featured">Sort: Featured</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="best">Best Sellers</option>
+                <option value="az">Alphabetical (A–Z)</option>
+              </select>
+            </div>
+            <!-- Layout is its own control now: sorting and viewing are
+                 separate decisions, so one no longer resets the other. -->
+            <div class="view-toggle" id="viewToggle" role="group" aria-label="Layout">
+              <button type="button" class="view-btn is-on" data-view="grid" aria-pressed="true" title="Grid view" aria-label="Grid view">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6" height="6" rx="1.2"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.2"/><rect x="2.5" y="11.5" width="6" height="6" rx="1.2"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.2"/></svg>
+              </button>
+              <button type="button" class="view-btn" data-view="large" aria-pressed="false" title="Large images" aria-label="Large image view">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="2.5" width="15" height="15" rx="1.6"/><path d="M2.6 13.2l3.9-3.2 3.4 2.7 3-2.3 4 3.3"/></svg>
+              </button>
+              <button type="button" class="view-btn" data-view="list" aria-pressed="false" title="List view" aria-label="List view">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="3.8" width="5.2" height="5.2" rx="1.1"/><rect x="2.5" y="11" width="5.2" height="5.2" rx="1.1"/><path d="M10.4 5.4h7.1M10.4 7.8h4.6M10.4 12.6h7.1M10.4 15h4.6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
         <div class="active-filters" id="activeFilters"></div>
