@@ -2,6 +2,72 @@
 (function () {
   const { Store, UI, esc, productImage, I, money } = window.FE;
 
+  /**
+   * Slowly drift a horizontal rail so it advertises what's further along
+   * without the shopper having to swipe.
+   *
+   * The rail holds two identical copies of the set; we advance the scroll
+   * position and wrap it back by exactly one copy's width, so the motion is
+   * seamless and never hits a dead end. Manual scrolling still works
+   * normally — any interaction pauses the drift and it picks up from
+   * wherever the shopper left it. It also idles while off-screen and stays
+   * completely still for anyone who prefers reduced motion.
+   *
+   * @param {HTMLElement} rail  the scrolling container
+   * @param {number} originals  how many cards make up ONE copy of the set
+   */
+  function driftRail(rail, originals) {
+    if (!rail || !originals) return;
+    const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return;
+
+    const SPEED = 0.35;       // px per frame ≈ 21px/s — a slow, calm drift
+    const RESUME_MS = 2500;   // settle time after the shopper interacts
+    const HOLD = Number.MAX_SAFE_INTEGER; // "stay paused until we say so"
+
+    let pos = 0, paused = false, resumeAt = 0, onScreen = true, span = 0;
+
+    // Distance from the first card to its clone = exactly one copy. Measured
+    // rather than using scrollWidth/2, because the flex gap between the two
+    // copies would otherwise skew the wrap point and make the loop jump.
+    const measure = () => {
+      const a = rail.children[0], b = rail.children[originals];
+      span = (a && b) ? (b.offsetLeft - a.offsetLeft) : 0;
+    };
+    measure();
+    window.addEventListener("resize", measure);
+
+    const nudge = () => { paused = true; resumeAt = Date.now() + RESUME_MS; };
+    ["pointerdown", "touchstart", "wheel"].forEach((ev) =>
+      rail.addEventListener(ev, nudge, { passive: true }));
+    const hold = () => { paused = true; resumeAt = HOLD; };
+    const release = () => { paused = true; resumeAt = 0; };   // resumes next frame, re-syncing pos
+    rail.addEventListener("mouseenter", hold);
+    rail.addEventListener("focusin", hold);
+    rail.addEventListener("mouseleave", release);
+    rail.addEventListener("focusout", release);
+
+    if (window.IntersectionObserver) {
+      new IntersectionObserver((entries) => { onScreen = entries[0].isIntersecting; })
+        .observe(rail);
+    }
+
+    function step() {
+      requestAnimationFrame(step);
+      if (!onScreen) return;
+      if (paused) {
+        if (Date.now() < resumeAt) return;
+        paused = false;
+        pos = rail.scrollLeft;   // continue from wherever they left it
+      }
+      if (!span) { measure(); if (!span) return; }
+      pos += SPEED;
+      if (pos >= span) pos -= span;   // wrap onto the first copy, unnoticed
+      rail.scrollLeft = pos;
+    }
+    requestAnimationFrame(step);
+  }
+
   FE.boot(() => {
     FE.UI.init("home");
 
@@ -27,7 +93,8 @@
       const catCover = (key) =>
         all.find((p) => p.category === key &&
           Array.isArray(p.images) && p.images.some(isRealImg)) || null;
-      catWrap.innerHTML = Store.getCategories().slice(0, 8).map((c, idx) => {
+      const homeCats = Store.getCategories().slice(0, 8);
+      const catCardHTML = (c, clone) => {
         const photos = catPhotos[c.key] || [];
         const cover = catCover(c.key);
         const img = photos.length
@@ -35,11 +102,18 @@
           : cover
             ? FE.imgHTML(cover, 0, { w: 600, h: 800, alt: c.name })
             : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 0, { w: 600, h: 800, alt: c.name });
-        return `<a class="cat-card reveal" href="shop.html?category=${c.key}">
+        // The rail drifts continuously, so a second copy of the set follows
+        // the first and the scroll position wraps back onto copy 1 before
+        // anyone sees the end. Clones are hidden from screen readers and the
+        // tab order so the duplicate isn't announced twice.
+        return `<a class="cat-card reveal" href="shop.html?category=${c.key}"${clone ? ' aria-hidden="true" tabindex="-1"' : ""}>
           ${img}
           <div class="cat-card__label"><h3>${esc(c.name)}</h3><span>${esc(c.blurb || "")}</span></div>
         </a>`;
-      }).join("");
+      };
+      catWrap.innerHTML = homeCats.map((c) => catCardHTML(c, false)).join("")
+        + homeCats.map((c) => catCardHTML(c, true)).join("");
+      driftRail(catWrap, homeCats.length);
     }
 
     // New arrivals
