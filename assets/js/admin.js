@@ -25,6 +25,9 @@
   let editingId = null;
   let formColors = [];             // colour options a customer can choose (variants)
   let formColorImages = [];        // photo URL per colour (parallel to formColors; "" = none)
+  // Colour NAMES that are sold out. Stored by name, not index, so removing
+  // or reordering colours can never mis-flag the wrong one.
+  let formColorsOut = [];
   let activeColorIdx = null;       // which colour a photo upload is targeting
   let formImages = [];             // array of image URLs (cPanel or pasted)
   let sessionUploads = [];         // cPanel URLs uploaded during THIS form session
@@ -140,8 +143,23 @@
   }
 
   async function persistRow(product) {
-    const { error } = await SB.from("products").upsert(H.productToRow(product));
-    if (error) throw error;
+    const row = H.productToRow(product);
+    const { error } = await SB.from("products").upsert(row);
+    if (!error) return;
+    // `colors_out` (per-colour sold-out flags) is a newer column. If the
+    // database hasn't had the ALTER TABLE run yet, Postgres rejects the whole
+    // upsert — which would make the admin look broken. Drop just that field
+    // and save everything else, so the panel keeps working until the column
+    // is added.
+    const msg = String(error.message || "");
+    if (/colors_out/.test(msg)) {
+      const { colors_out, ...rest } = row;   // eslint-disable-line no-unused-vars
+      const retry = await SB.from("products").upsert(rest);
+      if (retry.error) throw retry.error;
+      toast("Saved. (Run the colors_out SQL to enable per-colour sold-out.)");
+      return;
+    }
+    throw error;
   }
 
   async function duplicate(id) {
@@ -194,6 +212,7 @@
     $("#f_color").value = p ? p.color : "";
     formColors = p && Array.isArray(p.colors) ? p.colors.slice() : [];
     formColorImages = p && Array.isArray(p.colorImages) ? p.colorImages.slice() : [];
+    formColorsOut = p && Array.isArray(p.colorsOut) ? p.colorsOut.slice() : [];
     while (formColorImages.length < formColors.length) formColorImages.push("");
     // Everything the product had on disk — main image(s) + colour photos — so
     // we can delete the ones dropped/replaced when the edit is saved.
@@ -216,7 +235,7 @@
     // they don't orphan on the host.
     if (!committed) sessionUploads.forEach(deleteUploadedImage);
     $("#productModal").classList.remove("open");
-    editingId = null; formImages = []; formColors = []; formColorImages = [];
+    editingId = null; formImages = []; formColors = []; formColorImages = []; formColorsOut = [];
     sessionUploads = []; originalImages = []; committed = false; activeColorIdx = null;
   }
 
@@ -228,17 +247,29 @@
     if (!formColors.length) { box.innerHTML = '<span class="muted" style="font-size:.82rem">No colour options — single-colour product.</span>'; return; }
     box.innerHTML = formColors.map((c, i) => {
       const img = formColorImages[i];
+      const out = formColorsOut.includes(c);
       const thumb = img
         ? `<img src="${esc(img)}" alt="" class="cvar-thumb">`
         : `<span class="cvar-thumb cvar-thumb--empty">＋<small>Photo</small></span>`;
-      return `<div class="cvar-row">
+      return `<div class="cvar-row${out ? " is-out" : ""}">
         <span class="cvar-dot" style="background:${colorBg(c)}"></span>
         <span class="cvar-name">${esc(c)}</span>
+        <button type="button" class="cvar-stock${out ? " is-out" : ""}" data-cstock="${i}" title="${out ? "Put " + esc(c) + " back in stock" : "Mark " + esc(c) + " as sold out"}">${out ? "Sold out" : "In stock"}</button>
         <button type="button" class="cvar-photo" data-cphoto="${i}" title="Upload a photo for ${esc(c)}">${thumb}</button>
         <button type="button" class="cvar-link" data-clink="${i}" title="Paste an image URL for ${esc(c)}">🔗<small>Link</small></button>
         <button type="button" class="cvar-del" data-crm="${i}" aria-label="Remove ${esc(c)}">×</button>
       </div>`;
     }).join("");
+    // One click flips a colour between in stock and sold out. Stored by
+    // name so it survives colours being added or removed.
+    box.querySelectorAll("[data-cstock]").forEach((b) => b.onclick = () => {
+      const name = formColors[+b.getAttribute("data-cstock")];
+      if (!name) return;
+      formColorsOut = formColorsOut.includes(name)
+        ? formColorsOut.filter((x) => x !== name)
+        : formColorsOut.concat([name]);
+      renderFormColors();
+    });
     box.querySelectorAll("[data-crm]").forEach((b) => b.onclick = () => removeColor(+b.getAttribute("data-crm")));
     box.querySelectorAll("[data-cphoto]").forEach((b) => b.onclick = () => {
       activeColorIdx = +b.getAttribute("data-cphoto");
@@ -272,8 +303,10 @@
       deleteUploadedImage(img);
       sessionUploads = sessionUploads.filter((u) => u !== img);
     }
+    const goneName = formColors[i];
     formColors.splice(i, 1);
     formColorImages.splice(i, 1);
+    formColorsOut = formColorsOut.filter((c) => c !== goneName);
     renderFormColors();
   }
   // Upload/replace the photo for the colour the user tapped.
@@ -333,6 +366,7 @@
       oldPrice: hasDisc ? price : null,
       color: $("#f_color").value.trim() || "Blush",
       colors: formColors.slice(),
+      colorsOut: formColorsOut.filter((c) => formColors.includes(c)),
       colorImages: formColorImages.slice(),
       stock: $("#f_stock").value,
       status: $("#f_status").value,

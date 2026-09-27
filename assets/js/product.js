@@ -41,7 +41,12 @@
     // Gallery = every real photo the product has (main + one per colour), so
     // each colour's image appears as a thumbnail beside the main image.
     const hasColors = Array.isArray(pr.colors) && pr.colors.length;
-    let selColor = hasColors ? pr.colors[0] : "";
+    // Colours the shop has marked sold out: shown struck through and not
+    // addable. Default the selection to the first colour still available.
+    const outColors = new Set(Array.isArray(pr.colorsOut) ? pr.colorsOut : []);
+    const colorOut = (c) => outColors.has(c);
+    const firstAvail = hasColors ? (pr.colors.find((c) => !colorOut(c)) || pr.colors[0]) : "";
+    let selColor = hasColors ? firstAvail : "";
     let qty = 1;
     const galleryUrls = [];
     const pushReal = (u) => { if (u && /^https?:\/\//.test(u) && galleryUrls.indexOf(u) < 0) galleryUrls.push(u); };
@@ -57,6 +62,19 @@
     });
     let active = (hasColors && (selColor in colorToIdx)) ? colorToIdx[selColor] : 0;
 
+    // Sold out either because the whole product is, or because the colour
+    // the shopper is currently looking at is.
+    const soldOut = () => pr.stock === "out" || (hasColors && colorOut(selColor));
+    function stockLineHtml() {
+      if (pr.stock === "out") return '<span style="color:var(--danger)">● Currently sold out</span>';
+      if (hasColors && colorOut(selColor)) return '<span style="color:var(--danger)">● ' + esc(selColor) + ' is sold out — pick another colour</span>';
+      return '<span style="color:var(--success)">● In stock — ready to ship</span>';
+    }
+    function syncStockUi() {
+      const line = FE.$("#pdpStockLine"); if (line) line.innerHTML = stockLineHtml();
+      const add = FE.$("#pdpAdd"); if (add) add.disabled = soldOut();
+    }
+
     const main = FE.$("#pdpMain"), thumbs = FE.$("#pdpThumbs");
     function paint() {
       main.innerHTML = '<img src="' + esc(galleryUrls[active]) + '" alt="' + esc(pr.name) + '" width="800" height="1000" fetchpriority="high">';
@@ -71,6 +89,9 @@
         ch.setAttribute("aria-pressed", on ? "true" : "false");
       });
       const nm = FE.$("#pdpColorName"); if (nm) nm.textContent = color;
+      // A thumbnail click can land on a sold-out colour even though its
+      // swatch is disabled, so re-evaluate availability every time.
+      syncStockUi();
       if (scrollGallery && (color in colorToIdx)) { active = colorToIdx[color]; paint(); }
     }
     function selectImage(i) {
@@ -96,7 +117,9 @@
           ${pr.colors.map((c, i) => {
             const vimg = (pr.colorImages && pr.colorImages[i]) ? pr.colorImages[i] : pdpMainImg;
             const wRing = FE.colorHex(c) === "#FFFFFF" ? " color-swatch--white" : "";
-            return `<button type="button" class="color-swatch${i === 0 ? " is-selected" : ""}${wRing}" data-color-pick="pdp" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${FE.colorBg(c)}" title="${esc(c)}" aria-label="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}"></button>`;
+            const isOut = colorOut(c);
+            const on = c === selColor;
+            return `<button type="button" class="color-swatch${on ? " is-selected" : ""}${wRing}${isOut ? " color-swatch--out" : ""}" data-color-pick="pdp" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${FE.colorBg(c)}" title="${esc(c)}${isOut ? " — sold out" : ""}" aria-label="${esc(c)}${isOut ? " (sold out)" : ""}" aria-pressed="${on ? "true" : "false"}"${isOut ? " disabled" : ""}></button>`;
           }).join("")}
         </div>
       </div>` : "";
@@ -107,7 +130,7 @@
       <h1>${esc(pr.name)}</h1>
       <div class="pdp-price">${price}</div>
       <p class="pdp-desc">${esc(pr.shortDesc)}</p>
-      <div style="font-size:.86rem;color:${pr.stock==="out"?"var(--danger)":"var(--success)"};font-weight:600">${pr.stock==="out"?"● Currently sold out":"● In stock — ready to ship"}</div>
+      <div id="pdpStockLine" style="font-size:.86rem;font-weight:600">${stockLineHtml()}</div>
       ${colorRow}
       <div class="pdp-buy">
         <div class="qty">
@@ -115,7 +138,7 @@
           <span id="qVal">1</span>
           <button id="qPlus" aria-label="Increase">+</button>
         </div>
-        <button class="btn btn--primary" id="pdpAdd" ${pr.stock==="out"?"disabled":""}>Add to Cart</button>
+        <button class="btn btn--primary" id="pdpAdd" ${soldOut()?"disabled":""}>Add to Cart</button>
         <a class="btn btn--wa" id="pdpWa" href="${WhatsApp.inquiry(pr)}" target="_blank">${I.wa} Inquire</a>
       </div>
       <div class="pdp-meta">

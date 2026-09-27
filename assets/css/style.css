@@ -241,7 +241,18 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .hero-stats .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 
 /* ===================== CATEGORY TILES ===================== */
-.cat-grid { grid-template-columns: repeat(4, 1fr); }
+/* Categories scroll sideways in a single row. Stacked 2-up, 18 categories
+   made the home page enormously tall and pushed New Arrivals far below the
+   fold. Mirrors the .product-rail pattern already used elsewhere, so it
+   reads as part of the same design language.
+   align-items:flex-start stops the flex row stretching the cards and
+   breaking their 3/4 ratio. */
+.cat-grid { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 14px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scroll-padding-inline: var(--gutter); padding-bottom: 10px; scrollbar-width: thin; }
+.cat-grid > .cat-card { flex: 0 0 62%; scroll-snap-align: start; }
+.cat-grid::-webkit-scrollbar { height: 6px; }
+.cat-grid::-webkit-scrollbar-track { background: transparent; }
+.cat-grid::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+@media (min-width: 641px) { .cat-grid > .cat-card { flex-basis: 240px; } }
 .cat-card { position: relative; display: block; aspect-ratio: 3/4; border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
 .cat-card img, .cat-card svg { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .cat-card:hover img, .cat-card:hover svg { transform: scale(1.07); }
@@ -370,6 +381,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .color-swatch:hover { transform: translateY(-1px); }
 .color-swatch.is-selected { box-shadow: 0 0 0 2px var(--ink); }
 .color-swatch--white { box-shadow: 0 0 0 1px var(--muted-2); }
+/* Sold-out colour: dimmed with a diagonal strike, and not clickable. */
+.color-swatch--out { opacity: 0.45; cursor: not-allowed; position: relative; }
+.color-swatch--out::after { content: ""; position: absolute; left: -2px; right: -2px; top: 50%; height: 2px; background: var(--danger); transform: rotate(-45deg); border-radius: 2px; }
+.color-swatch--out:hover { transform: none; }
+
 .color-swatch--white.is-selected { box-shadow: 0 0 0 2px var(--ink); }
 /* Product detail page colour selector */
 .pdp-colors { margin: 4px 0 4px; }
@@ -404,6 +420,14 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .cvar-link { width: 46px; height: 46px; border-radius: var(--r-sm); border: 1px dashed var(--line); background: var(--cream); cursor: pointer; padding: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; color: var(--muted); flex: none; font-size: 1rem; }
 .cvar-link:hover { border-color: var(--accent); }
 .cvar-link small { font-size: 0.56rem; letter-spacing: 0.04em; margin-top: 2px; }
+/* Per-colour stock toggle in the admin colour rows — one click flips a
+   colour between in stock and sold out. */
+.cvar-stock { flex: none; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+.cvar-stock:hover { border-color: var(--accent); }
+.cvar-stock.is-out { background: var(--blush); border-color: var(--blush); color: var(--danger); }
+/* Dim the whole row so sold-out colours are obvious at a glance */
+.cvar-row.is-out .cvar-name { color: var(--muted-2); text-decoration: line-through; }
+.cvar-row.is-out .cvar-thumb { opacity: 0.45; }
 .cvar-del { width: 26px; height: 26px; border-radius: 999px; border: none; background: var(--cream); color: var(--ink); cursor: pointer; font-size: 1rem; line-height: 1; flex: none; }
 .cvar-del:hover { background: var(--blush); }
 
@@ -713,7 +737,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 1080px) {
-  .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .product-grid { grid-template-columns: repeat(3, 1fr); }
   .why-grid { grid-template-columns: repeat(2, 1fr); }
   .ig-grid { grid-template-columns: repeat(4, 1fr); }
@@ -763,7 +786,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 @media (max-width: 640px) {
   :root { --gutter: 18px; --header-h: 70px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .why-grid { grid-template-columns: 1fr; }
   .ig-grid { grid-template-columns: repeat(3, 1fr); }
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }

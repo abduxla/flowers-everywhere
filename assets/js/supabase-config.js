@@ -38,8 +38,14 @@
       color: r.color || "",
       colors: Array.isArray(r.colors) ? r.colors : [],
       colorImages: Array.isArray(r.color_images) ? r.color_images : [],
+      // colour names that are temporarily sold out (shown struck out,
+      // not addable to the cart)
+      colorsOut: Array.isArray(r.colors_out) ? r.colors_out : [],
       stock: r.stock || "in",
-      status: r.status || "published",
+      // `status` doubles as the archive flag in the DB. Never surface
+      // "archived" as the working status, or restoring writes it straight
+      // back and the product can never be un-archived.
+      status: (!r.status || r.status === "archived") ? "published" : r.status,
       shortDesc: r.short || "",
       longDesc: r.long || "",
       alt: r.alt || "",
@@ -67,8 +73,11 @@
       color: p.color || "",
       colors: Array.isArray(p.colors) ? p.colors : [],
       color_images: Array.isArray(p.colorImages) ? p.colorImages : [],
+      colors_out: Array.isArray(p.colorsOut) ? p.colorsOut : [],
       stock: p.stock || "in",
-      status: p.archived ? "archived" : (p.status || "published"),
+      status: p.archived
+        ? "archived"
+        : ((p.status && p.status !== "archived") ? p.status : "published"),
       short: p.shortDesc || "",
       long: p.longDesc || "",
       alt: p.alt || "",

@@ -485,12 +485,19 @@
       // Dot-only colour swatches. Each carries its colour's own photo (or the
       // main photo when none is set) so picking a colour swaps the card image.
       const mainImg = productImage(p, 0);
+      // Sold-out colours are struck through and not selectable, so a shopper
+      // can never add an unavailable colour to the cart. The card opens on
+      // the first colour that IS available.
+      const outSet = new Set(Array.isArray(p.colorsOut) ? p.colorsOut : []);
+      const firstOk = (Array.isArray(p.colors) ? p.colors : []).find((c) => !outSet.has(c));
       const colorPicker = (Array.isArray(p.colors) && p.colors.length)
         ? `<div class="color-picker" data-color-group="${p.id}" aria-label="Choose colour">
             ${p.colors.map((c, i) => {
               const vimg = (p.colorImages && p.colorImages[i]) ? p.colorImages[i] : mainImg;
               const wRing = colorHex(c) === "#FFFFFF" ? " color-swatch--white" : "";
-              return `<button type="button" class="color-swatch${i === 0 ? " is-selected" : ""}${wRing}" data-color-pick="${p.id}" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${colorBg(c)}" title="${esc(c)}" aria-label="${esc(c)}" aria-pressed="${i === 0 ? "true" : "false"}"></button>`;
+              const isOut = outSet.has(c);
+              const on = firstOk ? (c === firstOk) : (i === 0);
+              return `<button type="button" class="color-swatch${on ? " is-selected" : ""}${wRing}${isOut ? " color-swatch--out" : ""}" data-color-pick="${p.id}" data-color="${esc(c)}" data-img="${esc(vimg)}" style="background:${colorBg(c)}" title="${esc(c)}${isOut ? " — sold out" : ""}" aria-label="${esc(c)}${isOut ? " (sold out)" : ""}" aria-pressed="${on ? "true" : "false"}"${isOut ? " disabled" : ""}></button>`;
             }).join("")}
           </div>`
         : "";
