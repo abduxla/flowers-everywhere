@@ -34,6 +34,7 @@
         <a data-view="dashboard" class="active">▦ Dashboard</a>
         <a data-view="products">✿ Products</a>
         <a data-view="projects">✦ Projects</a>
+        <a data-view="collections">◈ Homepage Edits</a>
         <a data-view="categories">☰ Categories</a>
         <a data-view="settings">⚙ Data & Settings</a>
       </nav>
@@ -108,6 +109,16 @@
               <tbody id="projectRows"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <!-- HOMEPAGE COLLECTION CARDS -->
+      <section class="admin-view hidden" id="view-collections">
+        <div class="admin-topbar"><h1>Homepage Edits</h1><button class="btn btn--primary" id="saveCollections">Save changes</button></div>
+        <div class="admin-panel">
+          <p class="muted" style="margin-bottom:14px;font-size:.9rem">These are the three big cards in the <strong>Curated Collections</strong> strip on the home page. Swap the photo (upload or paste a link) and edit the wording — changes go live instantly.</p>
+          <div id="collectionRows" style="display:grid;gap:12px"></div>
+          <input type="file" id="collectionPhotoInput" accept="image/*" hidden>
         </div>
       </section>
 

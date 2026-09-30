@@ -38,7 +38,7 @@
   let pOriginalImage = "";         // photo when the form opened
   let pSessionUpload = "";         // photo uploaded during THIS session
   let pCommitted = false;
-  const MEM = { products: [], categories: [], projects: [] };  // live cache from Supabase
+  const MEM = { products: [], categories: [], projects: [], collections: [] };  // live cache from Supabase
 
   /* ---------------- Data cache ---------------- */
   async function loadAll() {
@@ -58,6 +58,12 @@
       const prj = await SB.from("projects").select("*").order("sort", { ascending: true });
       MEM.projects = (prj.error || !prj.data) ? [] : prj.data;
     } catch (e) { MEM.projects = []; }
+    // Homepage collection cards. Same treatment as projects: the table may
+    // not exist yet, and that must never break the admin.
+    try {
+      const col = await SB.from("collections").select("*").order("sort", { ascending: true });
+      MEM.collections = (col.error || !col.data) ? [] : col.data;
+    } catch (e) { MEM.collections = []; }
   }
   const all = () => MEM.products.map((p) => Object.assign({}, p));
   const cats = () => MEM.categories;
@@ -613,6 +619,82 @@
     toast("Backup downloaded");
   }
 
+  /* ---------------- Homepage collection cards ---------------- */
+  // The three "Curated Collections" tiles on the home page. Only a handful
+  // of rows that always exist, so this is a straight inline editor rather
+  // than the add/edit/delete table used for products and projects.
+  let activeCollectionKey = null;
+
+  function renderCollections() {
+    const box = $("#collectionRows"); if (!box) return;
+    if (!MEM.collections.length) {
+      box.innerHTML = '<p class="muted" style="font-size:.88rem">No collection cards yet. Run the <code>collections</code> SQL in Supabase to create them, then refresh this page.</p>';
+      return;
+    }
+    box.innerHTML = MEM.collections.map((c, i) => {
+      const thumb = c.image
+        ? `<img src="${esc(c.image)}" alt="" class="cvar-thumb">`
+        : `<span class="cvar-thumb cvar-thumb--empty">＋<small>Photo</small></span>`;
+      return `<div class="cvar-row" style="align-items:flex-start;gap:12px;padding:12px">
+        <button type="button" class="cvar-photo" style="width:74px;height:74px" data-colphoto="${i}" title="Upload a photo for ${esc(c.name)}">${thumb}</button>
+        <button type="button" class="cvar-link" style="width:54px;height:74px" data-collink="${i}" title="Paste an image URL">🔗<small>Link</small></button>
+        <div style="flex:1;min-width:0;display:grid;gap:6px">
+          <input data-colname="${i}" value="${esc(c.name || "")}" placeholder="Card title" style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);font-weight:600">
+          <input data-colblurb="${i}" value="${esc(c.blurb || "")}" placeholder="One-line description" style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:.86rem">
+        </div>
+      </div>`;
+    }).join("");
+
+    box.querySelectorAll("[data-colname]").forEach((el) => el.oninput = () => {
+      MEM.collections[+el.getAttribute("data-colname")].name = el.value;
+    });
+    box.querySelectorAll("[data-colblurb]").forEach((el) => el.oninput = () => {
+      MEM.collections[+el.getAttribute("data-colblurb")].blurb = el.value;
+    });
+    box.querySelectorAll("[data-colphoto]").forEach((b) => b.onclick = () => {
+      activeCollectionKey = MEM.collections[+b.getAttribute("data-colphoto")].key;
+      $("#collectionPhotoInput").click();
+    });
+    box.querySelectorAll("[data-collink]").forEach((b) => b.onclick = () => {
+      const c = MEM.collections[+b.getAttribute("data-collink")];
+      const u = (window.prompt("Paste the image URL for this card:", c.image || "") || "").trim();
+      if (!u) return;
+      c.image = u; renderCollections();
+    });
+  }
+
+  async function handleCollectionPhoto(file) {
+    if (!file || !activeCollectionKey) return;
+    const c = MEM.collections.find((x) => x.key === activeCollectionKey);
+    if (!c) return;
+    try {
+      toast("Uploading image…");
+      const blob = await compressToBlob(file);
+      const url = await uploadImage(blob);
+      // Replacing a photo uploaded earlier in this session frees the old one.
+      if (c.image && sessionUploads.includes(c.image)) {
+        deleteUploadedImage(c.image);
+        sessionUploads = sessionUploads.filter((u) => u !== c.image);
+      }
+      c.image = url;
+      sessionUploads.push(url);
+      renderCollections();
+    } catch (err) { toast("Image upload failed: " + (err.message || err)); }
+  }
+
+  async function saveCollections() {
+    if (!MEM.collections.length) return;
+    try {
+      const rows = MEM.collections.map((c) => ({
+        key: c.key, name: c.name || "", blurb: c.blurb || "",
+        image: c.image || "", palette: c.palette || "cream", sort: c.sort || 0,
+      }));
+      const { error } = await SB.from("collections").upsert(rows);
+      if (error) throw error;
+      await loadAll(); renderCollections(); toast("Homepage cards updated");
+    } catch (e) { toast("Save failed: " + (e.message || e)); }
+  }
+
   /* ---------------- View switching ---------------- */
   function switchView(view) {
     $$(".admin-view").forEach((v) => v.classList.add("hidden"));
@@ -622,6 +704,7 @@
     if (view === "products") renderTable();
     if (view === "projects") renderProjects();
     if (view === "categories") renderCategories();
+    if (view === "collections") renderCollections();
   }
 
   /* ---------------- Boot (after login) ---------------- */
@@ -677,6 +760,13 @@
     dz.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
 
     $("#addCatForm").onsubmit = addCategory;
+
+    // Homepage collection cards
+    if ($("#saveCollections")) $("#saveCollections").onclick = saveCollections;
+    if ($("#collectionPhotoInput")) $("#collectionPhotoInput").onchange = () => {
+      handleCollectionPhoto($("#collectionPhotoInput").files[0]);
+      $("#collectionPhotoInput").value = "";
+    };
 
     if ($("#exportJson")) $("#exportJson").onclick = exportJson;
     $("#logoutBtn").onclick = async () => { await SB.auth.signOut(); location.reload(); };

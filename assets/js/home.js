@@ -90,25 +90,46 @@
       // needed. Still falls back to the generated SVG when the category has
       // no photographed products yet (imgHTML also swaps to SVG on load
       // error, so a broken borrowed URL degrades gracefully).
+      // Every real photo belonging to a category, product images and colour
+      // variants alike. The tile shows one of them and moves to the next one
+      // each day, so the storefront keeps looking fresh without anyone
+      // uploading category artwork.
+      const catShots = (key) => {
+        const out = [];
+        all.forEach((p) => {
+          if (p.category !== key) return;
+          [].concat(p.images || [], p.colorImages || []).forEach((u) => {
+            if (isRealImg(u) && out.indexOf(u) < 0) out.push(u);
+          });
+        });
+        return out;
+      };
+      // Whole days since epoch — same photo all day for everyone, next photo
+      // tomorrow. Deterministic, so there's no flicker between page loads.
+      const dayIndex = Math.floor(Date.now() / 86400000);
       const catCover = (key) =>
         all.find((p) => p.category === key &&
           Array.isArray(p.images) && p.images.some(isRealImg)) || null;
       const homeCats = Store.getCategories().slice(0, 8);
       const catCardHTML = (c, clone) => {
+        const shots = catShots(c.key);
         const photos = catPhotos[c.key] || [];
         const cover = catCover(c.key);
-        const img = photos.length
-          ? FE.webImgHTML(photos[0], { w: 600, h: 800, alt: c.name, palette: c.palette, id: c.key, name: c.name })
-          : cover
-            ? FE.imgHTML(cover, 0, { w: 600, h: 800, alt: c.name })
-            : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 0, { w: 600, h: 800, alt: c.name });
+        const img = shots.length
+          // rotates once every 24h through that category's own product photos
+          ? FE.webImgHTML(shots[dayIndex % shots.length], { w: 600, h: 800, alt: c.name, palette: c.palette, id: c.key, name: c.name })
+          : photos.length
+            ? FE.webImgHTML(photos[0], { w: 600, h: 800, alt: c.name, palette: c.palette, id: c.key, name: c.name })
+            : cover
+              ? FE.imgHTML(cover, 0, { w: 600, h: 800, alt: c.name })
+              : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 0, { w: 600, h: 800, alt: c.name });
         // The rail drifts continuously, so a second copy of the set follows
         // the first and the scroll position wraps back onto copy 1 before
         // anyone sees the end. Clones are hidden from screen readers and the
         // tab order so the duplicate isn't announced twice.
         return `<a class="cat-card reveal" href="shop.html?category=${c.key}"${clone ? ' aria-hidden="true" tabindex="-1"' : ""}>
           ${img}
-          <div class="cat-card__label"><h3>${esc(c.name)}</h3><span>${esc(c.blurb || "")}</span></div>
+          <div class="cat-card__label"><h3>${esc(c.name)}</h3></div>
         </a>`;
       };
       catWrap.innerHTML = homeCats.map((c) => catCardHTML(c, false)).join("")
@@ -160,7 +181,7 @@
       const si = (window.FE_DATA && FE_DATA.siteImages) || {};
       colWrap.innerHTML = Store.getCollections().map((c) => `
         <a class="collection-card reveal" href="shop.html">
-          ${si[c.key] ? FE.webImgHTML(si[c.key], { w: 800, h: 600, alt: c.name, palette: c.palette, id: c.key, name: c.name }) : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 1, { w: 800, h: 600, alt: c.name })}
+          ${(c.image || si[c.key]) ? FE.webImgHTML(c.image || si[c.key], { w: 800, h: 600, alt: c.name, palette: c.palette, id: c.key, name: c.name }) : FE.imgHTML({ palette: c.palette, id: c.key, name: c.name }, 1, { w: 800, h: 600, alt: c.name })}
           <div class="collection-card__body">
             <h3>${esc(c.name)}</h3><p>${esc(c.blurb)}</p>
             <span class="btn btn--light btn--sm">Explore</span>

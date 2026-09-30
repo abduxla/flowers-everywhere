@@ -122,6 +122,18 @@
           return { key: c.key, name: c.name, palette: c.palette, blurb: c.blurb, sort: c.sort };
         });
       }
+      // Homepage collection cards ("The Wedding Edit" etc). Fetched on its
+      // own and wrapped, because this table is newer than the rest — if it
+      // hasn't been created yet the storefront must still render, falling
+      // back to the bundled data.js entries.
+      try {
+        var col = await window.FE_SB.from("collections").select("*").order("sort", { ascending: true });
+        if (!col.error && Array.isArray(col.data) && col.data.length) {
+          window.FE_DATA.collections = col.data.map(function (c) {
+            return { key: c.key, name: c.name, blurb: c.blurb, palette: c.palette, image: c.image, sort: c.sort };
+          });
+        }
+      } catch (e) { /* table not created yet — keep the bundled collections */ }
       return true;
     } catch (e) {
       console.warn("[FE] Supabase catalogue load failed; using bundled data.", e);
