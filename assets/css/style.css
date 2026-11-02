@@ -630,8 +630,14 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
    (800x800). A 4/5 box made `cover` scale square images 1.25x and slice
    ~12% off each side — the product card is already 1/1, so the page now
    shows the exact same, uncropped framing as the card. */
-.pdp-main { position: relative; border-radius: var(--r-lg); overflow: hidden; aspect-ratio: 1/1; background: var(--cream); cursor: zoom-in; }
-.pdp-main img, .pdp-main svg { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s var(--ease-soft); }
+/* No fixed aspect here on purpose: the box takes the shape of whichever
+   photo it holds. The catalogue mixes square flower shots (800x800) with
+   portrait plant shots (2000x3000), and ANY fixed ratio has to either crop
+   one of them (a square box sliced the top and bottom off the tall plants)
+   or pad it with letterbox bars. Letting the image set the height shows
+   every photo whole, with no crop, no zoom and no bars. */
+.pdp-main { position: relative; border-radius: var(--r-lg); overflow: hidden; background: var(--cream); cursor: zoom-in; }
+.pdp-main img, .pdp-main svg { width: 100%; height: auto; display: block; transition: transform 0.25s var(--ease-soft); }
 .pdp-main.zoomed img { transform: scale(2); cursor: zoom-out; }
 .pdp-info h1 { margin: 6px 0 12px; }
 .pdp-cat { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-deep); }

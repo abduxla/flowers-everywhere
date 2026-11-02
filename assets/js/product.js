@@ -77,7 +77,9 @@
 
     const main = FE.$("#pdpMain"), thumbs = FE.$("#pdpThumbs");
     function paint() {
-      main.innerHTML = '<img src="' + esc(galleryUrls[active]) + '" alt="' + esc(pr.name) + '" width="800" height="1000" fetchpriority="high">';
+      // No width/height attributes: they'd assert a fixed 4:5 shape, and the
+      // box now sizes itself to whatever the photo actually is.
+      main.innerHTML = '<img src="' + esc(galleryUrls[active]) + '" alt="' + esc(pr.name) + '" fetchpriority="high">';
       thumbs.innerHTML = galleryUrls.map((u, i) => `<button class="pdp-thumb${i === active ? " active" : ""}" data-i="${i}" aria-label="View image ${i + 1}"><img src="${esc(u)}" alt="${esc(pr.name)} view ${i + 1}" loading="lazy"></button>`).join("");
       thumbs.querySelectorAll("[data-i]").forEach((b) => b.onclick = () => selectImage(+b.getAttribute("data-i")));
     }
